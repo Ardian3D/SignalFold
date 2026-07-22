@@ -1,0 +1,93 @@
+/**
+ * SignalFold — Design Tokens (Phase 1 Canonical System)
+ * Source of Truth: PRD_SignalFold.md Section 20
+ */
+
+@theme {
+  /* Brand & Neutral Color Tokens */
+  --color-ink: #0A0A0A;
+  --color-paper: #F3F1EA;
+  --color-surface: #FFFFFF;
+  --color-graphite: #242522;
+  --color-muted: #A8AAA3;
+
+  /* Functional & Status Tokens */
+  --color-signal: #D6FF3F;
+  --color-critical: #FF4D3D;
+  --color-warning: #F2B84B;
+  --color-success: #28A66A;
+  --color-info: #4B78FF;
+
+  /* Dark Variant Surface Overlays */
+  --color-ink-surface: #141513;
+  --color-ink-border: #2A2C28;
+
+  /* Typography Families */
+  --font-display: "Sora", ui-sans-serif, system-ui, sans-serif;
+  --font-ui: "Inter", ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --font-sans: "Inter", ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --font-technical: "IBM Plex Mono", "SFMono-Regular", Consolas, monospace;
+  --font-mono: "IBM Plex Mono", "SFMono-Regular", Consolas, monospace;
+
+  /* Spacing Scale */
+  --spacing-xs: 0.25rem;  /* 4px */
+  --spacing-sm: 0.5rem;   /* 8px */
+  --spacing-md: 1rem;     /* 16px */
+  --spacing-lg: 1.5rem;   /* 24px */
+  --spacing-xl: 2rem;     /* 32px */
+  --spacing-2xl: 3rem;    /* 48px */
+
+  /* Border Radii */
+  --radius-xs: 2px;
+  --radius-sm: 4px;
+  --radius-md: 6px;
+  --radius-lg: 10px;
+  --radius-full: 9999px;
+}
+
+:root {
+  /* CSS Variables for direct usage or dynamic theme styling */
+  --ink: #0A0A0A;
+  --paper: #F3F1EA;
+  --surface: #FFFFFF;
+  --graphite: #242522;
+  --muted: #A8AAA3;
+  --signal: #D6FF3F;
+  --critical: #FF4D3D;
+  --warning: #F2B84B;
+  --success: #28A66A;
+  --info: #4B78FF;
+
+  /* Contextual Semantic Backgrounds & Text */
+  --color-bg-root: var(--paper);
+  --color-bg-surface: var(--surface);
+  --color-bg-subtle: #E8E5DC;
+  --color-border-neutral: #D8D4C8;
+  --color-border-dark: var(--graphite);
+  --color-text-primary: var(--ink);
+  --color-text-secondary: var(--graphite);
+  --color-text-muted: #5C5E58;
+
+  --font-display: "Sora", ui-sans-serif, system-ui, sans-serif;
+  --font-ui: "Inter", ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --font-sans: "Inter", ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --font-technical: "IBM Plex Mono", "SFMono-Regular", Consolas, monospace;
+  --font-mono: "IBM Plex Mono", "SFMono-Regular", Consolas, monospace;
+
+  /* Motion Timing Tokens */
+  --motion-fast: 150ms cubic-bezier(0.16, 1, 0.3, 1);
+  --motion-normal: 220ms cubic-bezier(0.16, 1, 0.3, 1);
+  --motion-panel: 350ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* Dark Theme overrides when [data-theme="dark"] or .dark class is active */
+.dark, [data-theme="dark"] {
+  --color-bg-root: var(--ink);
+  --color-bg-surface: #141513;
+  --color-bg-subtle: var(--graphite);
+  --color-border-neutral: #2A2C28;
+  --color-border-dark: var(--muted);
+  --color-text-primary: var(--paper);
+  --color-text-secondary: #D0CEC5;
+  --color-text-muted: var(--muted);
+}

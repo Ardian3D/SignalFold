@@ -1,0 +1,6 @@
+{
+  "name": "SignalFold",
+  "description": "SignalFold — AI-assisted incident command center. Turn signals into action.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
