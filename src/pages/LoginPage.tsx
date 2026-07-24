@@ -365,7 +365,7 @@ export function LoginPage() {
             {/* Utility and Account Links */}
             <div className="pt-4 border-t border-[#242522] flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-[10px] font-mono tracking-widest font-bold">
               <Link
-                to="/signup"
+                to={{ pathname: "/signup", hash: "" }}
                 className="text-[#A8AAA3] hover:text-[#D6FF3F] transition-colors focus-visible:outline-2 focus-visible:outline-[#4B78FF] rounded-[1px]"
                 style={{ fontFamily: 'var(--font-technical)' }}
               >
@@ -373,7 +373,7 @@ export function LoginPage() {
               </Link>
               
               <Link
-                to="/"
+                to={{ pathname: "/", hash: "" }}
                 className="text-[#5C5E58] hover:text-[#D6FF3F] transition-colors focus-visible:outline-2 focus-visible:outline-[#4B78FF] rounded-[1px] uppercase"
                 style={{ fontFamily: 'var(--font-technical)' }}
               >

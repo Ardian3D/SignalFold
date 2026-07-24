@@ -75,7 +75,7 @@ export const LandingHero: React.FC<LandingHeroProps> = ({ className = '' }) => {
             {/* Primary & Secondary Action CTAs */}
             <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 sm:gap-4 pt-1">
               <Link
-                to="/demo"
+                to={{ pathname: "/demo", hash: "" }}
                 className="inline-flex items-center justify-center gap-2 px-6 py-3.5 text-xs font-mono font-bold tracking-widest bg-[#F3F1EA] text-[#0A0A0A] hover:bg-[#D6FF3F] hover:text-[#0A0A0A] rounded-[2px] border border-[#F3F1EA] hover:border-[#D6FF3F] transition-colors duration-150 focus-visible:outline-2 focus-visible:outline-[#4B78FF] group select-none"
               >
                 <span>OPEN DEMO</span>

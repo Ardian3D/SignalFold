@@ -92,14 +92,14 @@ export const LandingNavbar: React.FC<LandingNavbarProps> = ({ className = '' }) 
         {/* Right: Actions (SIGN IN + OPEN DEMO CTA) */}
         <div className="hidden md:flex items-center gap-4 shrink-0">
           <Link
-            to="/login"
+            to={{ pathname: "/login", hash: "" }}
             className="text-xs font-mono font-bold tracking-wider text-[#0A0A0A] dark:text-[#F3F1EA] hover:text-[#4B78FF] dark:hover:text-[#D6FF3F] transition-colors px-2 py-1.5 rounded-[2px] focus-visible:outline-2 focus-visible:outline-[#4B78FF]"
           >
             SIGN IN
           </Link>
 
           <Link
-            to="/demo"
+            to={{ pathname: "/demo", hash: "" }}
             className="relative inline-flex items-center gap-2 px-3.5 py-2 text-xs font-mono font-bold tracking-wider bg-[#0A0A0A] text-[#F3F1EA] dark:bg-[#F3F1EA] dark:text-[#0A0A0A] rounded-[2px] border border-[#242522] dark:border-[#D8D4C8] hover:bg-[#242522] dark:hover:bg-[#E8E5DC] transition-colors duration-150 active:scale-[0.98] focus-visible:outline-2 focus-visible:outline-[#4B78FF] group select-none"
           >
             {/* Precise Signal Lime Accent Indicator */}
@@ -162,7 +162,7 @@ export const LandingNavbar: React.FC<LandingNavbarProps> = ({ className = '' }) 
 
           <div className="space-y-3 pt-6 border-t border-[#D8D4C8] dark:border-[#2A2C28] pb-8">
             <Link
-              to="/login"
+              to={{ pathname: "/login", hash: "" }}
               onClick={handleNavLinkClick}
               className="w-full py-3 flex items-center justify-center text-xs font-mono font-bold tracking-wider text-[#0A0A0A] dark:text-[#F3F1EA] bg-[#F3F1EA] dark:bg-[#141513] border border-[#D8D4C8] dark:border-[#2A2C28] rounded-[2px] hover:bg-[#E8E5DC] dark:hover:bg-[#242522] transition-colors"
             >
@@ -170,7 +170,7 @@ export const LandingNavbar: React.FC<LandingNavbarProps> = ({ className = '' }) 
             </Link>
 
             <Link
-              to="/demo"
+              to={{ pathname: "/demo", hash: "" }}
               onClick={handleNavLinkClick}
               className="w-full py-3.5 flex items-center justify-center gap-2 text-xs font-mono font-bold tracking-wider text-[#F3F1EA] bg-[#0A0A0A] dark:bg-[#F3F1EA] dark:text-[#0A0A0A] rounded-[2px] border border-[#242522] dark:border-[#D8D4C8] hover:bg-[#242522] dark:hover:bg-[#E8E5DC] transition-colors"
             >

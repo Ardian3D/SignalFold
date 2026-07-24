@@ -59,7 +59,7 @@ export const ClosingCtaSection: React.FC<ClosingCtaSectionProps> = ({ className 
             <div className="space-y-4 w-full">
               {/* Primary CTA */}
               <Link
-                to="/demo"
+                to={{ pathname: "/demo", hash: "" }}
                 className="w-full inline-flex items-center justify-center gap-2.5 px-6 py-4 text-xs font-mono font-bold tracking-widest bg-[#F3F1EA] text-[#0A0A0A] hover:bg-[#D6FF3F] hover:text-[#0A0A0A] rounded-[2px] border border-[#F3F1EA] hover:border-[#D6FF3F] transition-colors duration-150 focus-visible:outline-2 focus-visible:outline-[#4B78FF] group select-none"
               >
                 <span>START A DEMO INCIDENT</span>
@@ -68,7 +68,7 @@ export const ClosingCtaSection: React.FC<ClosingCtaSectionProps> = ({ className 
 
               {/* Secondary CTA */}
               <Link
-                to="/app"
+                to={{ pathname: "/app", hash: "" }}
                 className="w-full inline-flex items-center justify-center gap-2.5 px-6 py-4 text-xs font-mono font-bold tracking-widest text-[#F3F1EA] hover:text-[#D6FF3F] border border-[#242522] hover:border-[#D6FF3F]/50 rounded-[2px] transition-colors duration-150 focus-visible:outline-2 focus-visible:outline-[#4B78FF] group select-none"
               >
                 <span>OPEN DASHBOARD</span>

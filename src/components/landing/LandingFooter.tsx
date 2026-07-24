@@ -105,21 +105,21 @@ export const LandingFooter: React.FC<LandingFooterProps> = ({ className = '' }) 
                   ACTIONS
                 </span>
                 <Link
-                  to="/demo"
+                  to={{ pathname: "/demo", hash: "" }}
                   className="inline-block py-1 text-[11px] font-mono font-bold tracking-wider text-[#A8AAA3] hover:text-[#D6FF3F] transition-colors focus-visible:outline-2 focus-visible:outline-[#4B78FF]"
                   style={{ fontFamily: 'var(--font-technical)' }}
                 >
                   START A DEMO INCIDENT
                 </Link>
                 <Link
-                  to="/app"
+                  to={{ pathname: "/app", hash: "" }}
                   className="inline-block py-1 text-[11px] font-mono font-bold tracking-wider text-[#A8AAA3] hover:text-[#D6FF3F] transition-colors focus-visible:outline-2 focus-visible:outline-[#4B78FF]"
                   style={{ fontFamily: 'var(--font-technical)' }}
                 >
                   OPEN DASHBOARD
                 </Link>
                 <Link
-                  to="/login"
+                  to={{ pathname: "/login", hash: "" }}
                   className="inline-block py-1 text-[11px] font-mono font-bold tracking-wider text-[#A8AAA3] hover:text-[#D6FF3F] transition-colors focus-visible:outline-2 focus-visible:outline-[#4B78FF]"
                   style={{ fontFamily: 'var(--font-technical)' }}
                 >
@@ -161,13 +161,13 @@ export const LandingFooter: React.FC<LandingFooterProps> = ({ className = '' }) 
               >
                 <div className="flex gap-4">
                   <Link
-                    to="/privacy"
+                    to={{ pathname: "/privacy", hash: "" }}
                     className="hover:text-[#D6FF3F] transition-colors focus-visible:outline-2 focus-visible:outline-[#4B78FF]"
                   >
                     PRIVACY
                   </Link>
                   <Link
-                    to="/terms"
+                    to={{ pathname: "/terms", hash: "" }}
                     className="hover:text-[#D6FF3F] transition-colors focus-visible:outline-2 focus-visible:outline-[#4B78FF]"
                   >
                     TERMS

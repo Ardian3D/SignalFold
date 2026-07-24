@@ -503,11 +503,11 @@ export function SignupPage() {
             {/* Legal Copy beneath submit button */}
             <p className="text-[10px] text-[#5C5E58] leading-relaxed text-center font-sans">
               By creating an account, you acknowledge the{' '}
-              <Link to="/terms" className="text-[#A8AAA3] hover:text-[#D6FF3F] underline underline-offset-2">
+              <Link to={{ pathname: "/terms", hash: "" }} className="text-[#A8AAA3] hover:text-[#D6FF3F] underline underline-offset-2">
                 Terms
               </Link>{' '}
               and{' '}
-              <Link to="/privacy" className="text-[#A8AAA3] hover:text-[#D6FF3F] underline underline-offset-2">
+              <Link to={{ pathname: "/privacy", hash: "" }} className="text-[#A8AAA3] hover:text-[#D6FF3F] underline underline-offset-2">
                 Privacy Notice
               </Link>
               .
@@ -516,7 +516,7 @@ export function SignupPage() {
             {/* Account and home actions */}
             <div className="pt-4 border-t border-[#242522] flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-[10px] font-mono tracking-widest font-bold">
               <Link
-                to="/login"
+                to={{ pathname: "/login", hash: "" }}
                 className="text-[#A8AAA3] hover:text-[#D6FF3F] transition-colors focus-visible:outline-2 focus-visible:outline-[#4B78FF] rounded-[1px]"
                 style={{ fontFamily: 'var(--font-technical)' }}
               >
@@ -524,7 +524,7 @@ export function SignupPage() {
               </Link>
               
               <Link
-                to="/"
+                to={{ pathname: "/", hash: "" }}
                 className="text-[#5C5E58] hover:text-[#D6FF3F] transition-colors focus-visible:outline-2 focus-visible:outline-[#4B78FF] rounded-[1px] uppercase"
                 style={{ fontFamily: 'var(--font-technical)' }}
               >

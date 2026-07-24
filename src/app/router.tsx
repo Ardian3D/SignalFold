@@ -7,6 +7,11 @@ import { LoginPage } from '@/pages/LoginPage';
 import { SignupPage } from '@/pages/SignupPage';
 import { OnboardingPage } from '@/pages/OnboardingPage';
 import { RootLayout } from '@/components/layout/RootLayout';
+import { AppShell } from '@/layouts/AppShell';
+import { DashboardPage } from '@/pages/DashboardPage';
+import { IncidentsPage } from '@/pages/IncidentsPage';
+import { CreateIncidentPage } from '@/pages/CreateIncidentPage';
+import { IncidentRoomPage } from '@/pages/IncidentRoomPage';
 
 /**
  * Base Application Router configuration.
@@ -57,6 +62,46 @@ export const router = createBrowserRouter([
     element: (
       <RootLayout>
         <OnboardingPage />
+      </RootLayout>
+    ),
+  },
+  {
+    path: '/app',
+    element: (
+      <RootLayout>
+        <AppShell>
+          <DashboardPage />
+        </AppShell>
+      </RootLayout>
+    ),
+  },
+  {
+    path: '/app/incidents',
+    element: (
+      <RootLayout>
+        <AppShell>
+          <IncidentsPage />
+        </AppShell>
+      </RootLayout>
+    ),
+  },
+  {
+    path: '/app/incidents/new',
+    element: (
+      <RootLayout>
+        <AppShell>
+          <CreateIncidentPage />
+        </AppShell>
+      </RootLayout>
+    ),
+  },
+  {
+    path: '/app/incidents/SF-2026-0042',
+    element: (
+      <RootLayout>
+        <AppShell>
+          <IncidentRoomPage />
+        </AppShell>
       </RootLayout>
     ),
   },
