@@ -1,6 +1,8 @@
 import { describe, it, expect } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import { BrandLogo, BrandMark } from '@/components/brand';
+import fs from 'fs';
+import path from 'path';
 
 describe('SignalFold — Brand Assets & Components Tests', () => {
   it('1. BrandLogo renders using official PNG lockup with default accessible alt text', () => {
@@ -50,5 +52,20 @@ describe('SignalFold — Brand Assets & Components Tests', () => {
     const img = screen.getByAltText('SignalFold') as HTMLImageElement;
     expect(img.className).toContain('object-contain');
     expect(img.className).toContain('shrink-0');
+  });
+
+  it('7. Brand image file asset-integrity test: matches PNG raw byte signature', () => {
+    const assetPath = path.resolve(__dirname, '../assets/brand/SignalFold-logo.png');
+    expect(fs.existsSync(assetPath)).toBe(true);
+
+    const bytes = fs.readFileSync(assetPath);
+    expect(bytes.length).toBeGreaterThan(0);
+
+    // PNG 8-byte signature: 89 50 4E 47 0D 0A 1A 0A
+    const signature = Array.from(bytes.subarray(0, 8));
+    expect(signature).toEqual([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]);
+
+    // Check size is consistent with restored asset (370813 bytes)
+    expect(bytes.length).toBe(370813);
   });
 });

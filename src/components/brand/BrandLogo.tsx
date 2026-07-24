@@ -1,5 +1,7 @@
 import React from 'react';
-import logoImage from '@/assets/brand/SignalFold-logo.png';
+import signalFoldLogo from '../../assets/brand/SignalFold-logo.png';
+
+// Brand image files are binary assets. Never read or rewrite them as UTF-8 strings.
 
 export interface BrandLogoProps {
   /**
@@ -64,7 +66,7 @@ export const BrandLogo: React.FC<BrandLogoProps> = ({
       }}
     >
       <img
-        src={logoImage}
+        src={signalFoldLogo}
         alt={alt}
         loading={loading}
         className={`${heightConfig[size]} w-auto object-contain shrink-0`}

@@ -87,6 +87,11 @@ export function IncidentRoomPage() {
   const [isContextDrawerOpen, setIsContextDrawerOpen] = useState(false);
   const [contextTriggerId, setContextTriggerId] = useState<string | null>(null);
 
+  // Commander assignment drawer state
+  const [isCommanderDrawerOpen, setIsCommanderDrawerOpen] = useState(false);
+  const [commanderTriggerId, setCommanderTriggerId] = useState<string | null>(null);
+  const [isCommanderValidated, setIsCommanderValidated] = useState(false);
+
   // Lifecycle drawer forms state
   const [isBlockingFormOpen, setIsBlockingFormOpen] = useState(false);
   const [blockingReasonInput, setBlockingReasonInput] = useState('');
@@ -119,7 +124,204 @@ export function IncidentRoomPage() {
 
   const workspaceDrawerRef = React.useRef<HTMLDivElement>(null);
 
+  // Add Incident Note Drawer states & refs
+  const [isNoteDrawerOpen, setIsNoteDrawerOpen] = useState(false);
+  const [noteTriggerId, setNoteTriggerId] = useState<string | null>(null);
+  const [noteContent, setNoteContent] = useState('');
+  const [previewContent, setPreviewContent] = useState<string | null>(null);
+  const [noteError, setNoteError] = useState<string | null>(null);
+
+  const noteDrawerRef = React.useRef<HTMLDivElement>(null);
+
+  // Change Status Drawer states & refs (Phase 02)
+  const [isStatusDrawerOpen, setIsStatusDrawerOpen] = useState(false);
+  const [statusTriggerId, setStatusTriggerId] = useState<string | null>(null);
+  const [targetStatus, setTargetStatus] = useState('');
+  const [transitionContext, setTransitionContext] = useState('');
+  const [isStatusValidated, setIsStatusValidated] = useState(false);
+  const [isStatusPreviewStale, setIsStatusPreviewStale] = useState(false);
+  const [lastValidatedTargetStatus, setLastValidatedTargetStatus] = useState('');
+  const [lastValidatedContext, setLastValidatedContext] = useState('');
+
+  const statusDrawerRef = React.useRef<HTMLDivElement>(null);
+
+  // Change Severity Drawer states & refs (Phase 03)
+  const [isSeverityDrawerOpen, setIsSeverityDrawerOpen] = useState(false);
+  const [severityTriggerId, setSeverityTriggerId] = useState<string | null>(null);
+  const [selectedSeverity, setSelectedSeverity] = useState<'SEV1' | 'SEV2' | 'SEV3' | 'SEV4' | ''>('');
+  const [severityRationale, setSeverityRationale] = useState('');
+  const [isAiSuggestionInformed, setIsAiSuggestionInformed] = useState(false);
+  const [isSeverityValidated, setIsSeverityValidated] = useState(false);
+  const [isSeverityPreviewStale, setIsSeverityPreviewStale] = useState(false);
+  const [lastValidatedSeverity, setLastValidatedSeverity] = useState<string>('');
+  const [lastValidatedRationale, setLastValidatedRationale] = useState<string>('');
+  const [lastValidatedAiSuggestionInformed, setLastValidatedAiSuggestionInformed] = useState<boolean>(false);
+  const [severityValidationError, setSeverityValidationError] = useState<string | null>(null);
+  const [severityValidationAttempted, setSeverityValidationAttempted] = useState(false);
+
+  const severityDrawerRef = React.useRef<HTMLDivElement>(null);
+
+  const openSeverityDrawer = () => {
+    setIsNoteDrawerOpen(false);
+    setIsWorkspaceDrawerOpen(false);
+    setIsContextDrawerOpen(false);
+    setIsCommanderDrawerOpen(false);
+    setIsStatusDrawerOpen(false);
+    setIsDrawerOpen(false);
+    setIsLifecycleDrawerOpen(false);
+
+    setIsSeverityDrawerOpen(true);
+    setSeverityTriggerId('change-severity-trigger');
+    
+    // Always start empty when opening
+    setSelectedSeverity('');
+    setSeverityRationale('');
+    setIsAiSuggestionInformed(false);
+    setIsSeverityValidated(false);
+    setIsSeverityPreviewStale(false);
+    setLastValidatedSeverity('');
+    setLastValidatedRationale('');
+    setLastValidatedAiSuggestionInformed(false);
+    setSeverityValidationError(null);
+    setSeverityValidationAttempted(false);
+  };
+
+  const closeSeverityDrawer = () => {
+    setIsSeverityDrawerOpen(false);
+    // Discard all local severity-decision data
+    setSelectedSeverity('');
+    setSeverityRationale('');
+    setIsAiSuggestionInformed(false);
+    setIsSeverityValidated(false);
+    setIsSeverityPreviewStale(false);
+    setLastValidatedSeverity('');
+    setLastValidatedRationale('');
+    setLastValidatedAiSuggestionInformed(false);
+    setSeverityValidationError(null);
+    setSeverityValidationAttempted(false);
+    if (severityTriggerId) {
+      setTimeout(() => {
+        const trigger = document.getElementById(severityTriggerId);
+        if (trigger) {
+          trigger.focus();
+        }
+      }, 50);
+    }
+  };
+
+  const resetSeverityDecision = () => {
+    setSelectedSeverity('');
+    setSeverityRationale('');
+    setIsAiSuggestionInformed(false);
+    setIsSeverityValidated(false);
+    setIsSeverityPreviewStale(false);
+    setLastValidatedSeverity('');
+    setLastValidatedRationale('');
+    setLastValidatedAiSuggestionInformed(false);
+    setSeverityValidationError(null);
+    setSeverityValidationAttempted(false);
+  };
+
+  const runValidation = () => {
+    setSeverityValidationAttempted(true);
+    const hasSeverity = !!selectedSeverity;
+    const hasRationale = severityRationale.trim().length > 0;
+
+    if (!hasSeverity && !hasRationale) {
+      setSeverityValidationError('SEVERITY SELECTION REQUIRED and SEVERITY RATIONALE REQUIRED');
+      setIsSeverityValidated(false);
+      return false;
+    } else if (!hasSeverity) {
+      setSeverityValidationError('SEVERITY SELECTION REQUIRED');
+      setIsSeverityValidated(false);
+      return false;
+    } else if (!hasRationale) {
+      setSeverityValidationError('SEVERITY RATIONALE REQUIRED');
+      setIsSeverityValidated(false);
+      return false;
+    }
+
+    setSeverityValidationError(null);
+    setIsSeverityValidated(true);
+    setIsSeverityPreviewStale(false);
+    setLastValidatedSeverity(selectedSeverity);
+    setLastValidatedRationale(severityRationale.trim());
+    setLastValidatedAiSuggestionInformed(isAiSuggestionInformed);
+    return true;
+  };
+
+  const openStatusDrawer = () => {
+    setIsNoteDrawerOpen(false);
+    setIsWorkspaceDrawerOpen(false);
+    setIsContextDrawerOpen(false);
+    setIsCommanderDrawerOpen(false);
+    setIsDrawerOpen(false);
+    setIsLifecycleDrawerOpen(false);
+    setIsSeverityDrawerOpen(false);
+
+    setIsStatusDrawerOpen(true);
+    setStatusTriggerId('change-status-trigger');
+    setTargetStatus('');
+    setTransitionContext('');
+    setIsStatusValidated(false);
+    setIsStatusPreviewStale(false);
+    setLastValidatedTargetStatus('');
+    setLastValidatedContext('');
+  };
+
+  const closeStatusDrawer = () => {
+    setIsStatusDrawerOpen(false);
+    setTargetStatus('');
+    setTransitionContext('');
+    setIsStatusValidated(false);
+    setIsStatusPreviewStale(false);
+    setLastValidatedTargetStatus('');
+    setLastValidatedContext('');
+    if (statusTriggerId) {
+      setTimeout(() => {
+        const trigger = document.getElementById(statusTriggerId);
+        if (trigger) {
+          trigger.focus();
+        }
+      }, 50);
+    }
+  };
+
+  const openNoteDrawer = () => {
+    setIsWorkspaceDrawerOpen(false);
+    setIsContextDrawerOpen(false);
+    setIsCommanderDrawerOpen(false);
+    setIsStatusDrawerOpen(false);
+    setIsSeverityDrawerOpen(false);
+    
+    setIsNoteDrawerOpen(true);
+    setNoteTriggerId('add-note-trigger');
+    setNoteContent('');
+    setPreviewContent(null);
+    setNoteError(null);
+  };
+
+  const closeNoteDrawer = () => {
+    setIsNoteDrawerOpen(false);
+    setNoteContent('');
+    setPreviewContent(null);
+    setNoteError(null);
+    if (noteTriggerId) {
+      setTimeout(() => {
+        const trigger = document.getElementById(noteTriggerId);
+        if (trigger) {
+          trigger.focus();
+        }
+      }, 50);
+    }
+  };
+
   const openWorkspaceDrawer = () => {
+    setIsNoteDrawerOpen(false);
+    setIsContextDrawerOpen(false);
+    setIsCommanderDrawerOpen(false);
+    setIsStatusDrawerOpen(false);
+    setIsSeverityDrawerOpen(false);
     setIsWorkspaceDrawerOpen(true);
     setWorkspaceTriggerId('open-task-workspace');
   };
@@ -261,8 +463,14 @@ export function IncidentRoomPage() {
 
   const drawerRef = React.useRef<HTMLDivElement>(null);
   const contextDrawerRef = React.useRef<HTMLDivElement>(null);
+  const commanderDrawerRef = React.useRef<HTMLDivElement>(null);
 
   const openContextDrawer = () => {
+    setIsNoteDrawerOpen(false);
+    setIsWorkspaceDrawerOpen(false);
+    setIsCommanderDrawerOpen(false); // Only one responder-related drawer open at a time
+    setIsStatusDrawerOpen(false);
+    setIsSeverityDrawerOpen(false);
     setIsContextDrawerOpen(true);
     setContextTriggerId('view-responder-context');
   };
@@ -272,6 +480,29 @@ export function IncidentRoomPage() {
     if (contextTriggerId) {
       setTimeout(() => {
         const trigger = document.getElementById(contextTriggerId);
+        if (trigger) {
+          trigger.focus();
+        }
+      }, 50);
+    }
+  };
+
+  const openCommanderDrawer = () => {
+    setIsNoteDrawerOpen(false);
+    setIsWorkspaceDrawerOpen(false);
+    setIsContextDrawerOpen(false); // Only one responder-related drawer open at a time
+    setIsStatusDrawerOpen(false);
+    setIsSeverityDrawerOpen(false);
+    setIsCommanderValidated(false); // Reset validation
+    setIsCommanderDrawerOpen(true);
+    setCommanderTriggerId('preview-commander-assignment');
+  };
+
+  const closeCommanderDrawer = () => {
+    setIsCommanderDrawerOpen(false);
+    if (commanderTriggerId) {
+      setTimeout(() => {
+        const trigger = document.getElementById(commanderTriggerId);
         if (trigger) {
           trigger.focus();
         }
@@ -336,6 +567,292 @@ export function IncidentRoomPage() {
   }, [isContextDrawerOpen]);
 
   React.useEffect(() => {
+    if (!isCommanderDrawerOpen) return;
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        closeCommanderDrawer();
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [isCommanderDrawerOpen, commanderTriggerId]);
+
+  React.useEffect(() => {
+    if (!isCommanderDrawerOpen) return;
+
+    const timer = setTimeout(() => {
+      const closeBtn = commanderDrawerRef.current?.querySelector('button[aria-label="Close commander assignment review"]') as HTMLElement;
+      if (closeBtn) {
+        closeBtn.focus();
+      }
+    }, 50);
+
+    const handleTabTrap = (e: KeyboardEvent) => {
+      if (e.key !== 'Tab') return;
+      if (!commanderDrawerRef.current) return;
+
+      const focusableSelectors = 'button:not([disabled]), [href], input, select, textarea, [tabindex="0"]';
+      const focusableElements = commanderDrawerRef.current.querySelectorAll(focusableSelectors);
+      if (focusableElements.length === 0) return;
+
+      const firstElement = focusableElements[0] as HTMLElement;
+      const lastElement = focusableElements[focusableElements.length - 1] as HTMLElement;
+
+      if (e.shiftKey) {
+        if (document.activeElement === firstElement) {
+          lastElement.focus();
+          e.preventDefault();
+        }
+      } else {
+        if (document.activeElement === lastElement) {
+          firstElement.focus();
+          e.preventDefault();
+        }
+      }
+    };
+
+    window.addEventListener('keydown', handleTabTrap);
+    return () => {
+      clearTimeout(timer);
+      window.removeEventListener('keydown', handleTabTrap);
+    };
+  }, [isCommanderDrawerOpen]);
+
+  React.useEffect(() => {
+    if (isCommanderDrawerOpen) {
+      document.body.classList.add('overflow-hidden');
+    } else {
+      document.body.classList.remove('overflow-hidden');
+    }
+    return () => {
+      document.body.classList.remove('overflow-hidden');
+    };
+  }, [isCommanderDrawerOpen]);
+
+  React.useEffect(() => {
+    if (!isNoteDrawerOpen) return;
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        closeNoteDrawer();
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [isNoteDrawerOpen, noteTriggerId]);
+
+  React.useEffect(() => {
+    if (!isNoteDrawerOpen) return;
+
+    const timer = setTimeout(() => {
+      const closeBtn = noteDrawerRef.current?.querySelector('button[aria-label="Close incident note composer"]') as HTMLElement;
+      if (closeBtn) {
+        closeBtn.focus();
+      }
+    }, 50);
+
+    const handleTabTrap = (e: KeyboardEvent) => {
+      if (e.key !== 'Tab') return;
+      if (!noteDrawerRef.current) return;
+
+      const focusableSelectors = 'button:not([disabled]), [href], input, select, textarea, [tabindex="0"]';
+      const focusableElements = noteDrawerRef.current.querySelectorAll(focusableSelectors);
+      if (focusableElements.length === 0) return;
+
+      const firstElement = focusableElements[0] as HTMLElement;
+      const lastElement = focusableElements[focusableElements.length - 1] as HTMLElement;
+
+      if (e.shiftKey) {
+        if (document.activeElement === firstElement) {
+          lastElement.focus();
+          e.preventDefault();
+        }
+      } else {
+        if (document.activeElement === lastElement) {
+          firstElement.focus();
+          e.preventDefault();
+        }
+      }
+    };
+
+    window.addEventListener('keydown', handleTabTrap);
+    return () => {
+      clearTimeout(timer);
+      window.removeEventListener('keydown', handleTabTrap);
+    };
+  }, [isNoteDrawerOpen]);
+
+  React.useEffect(() => {
+    if (isNoteDrawerOpen) {
+      document.body.classList.add('overflow-hidden');
+    } else {
+      document.body.classList.remove('overflow-hidden');
+    }
+    return () => {
+      document.body.classList.remove('overflow-hidden');
+    };
+  }, [isNoteDrawerOpen]);
+
+  React.useEffect(() => {
+    if (!isStatusDrawerOpen) return;
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        closeStatusDrawer();
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [isStatusDrawerOpen, statusTriggerId]);
+
+  React.useEffect(() => {
+    if (!isStatusDrawerOpen) return;
+
+    const timer = setTimeout(() => {
+      const closeBtn = statusDrawerRef.current?.querySelector('button[aria-label="Close status transition review"]') as HTMLElement;
+      if (closeBtn) {
+        closeBtn.focus();
+      }
+    }, 50);
+
+    const handleTabTrap = (e: KeyboardEvent) => {
+      if (e.key !== 'Tab') return;
+      if (!statusDrawerRef.current) return;
+
+      const focusableSelectors = 'button:not([disabled]), [href], input, select, textarea, [tabindex="0"]';
+      const focusableElements = statusDrawerRef.current.querySelectorAll(focusableSelectors);
+      if (focusableElements.length === 0) return;
+
+      const firstElement = focusableElements[0] as HTMLElement;
+      const lastElement = focusableElements[focusableElements.length - 1] as HTMLElement;
+
+      if (e.shiftKey) {
+        if (document.activeElement === firstElement) {
+          lastElement.focus();
+          e.preventDefault();
+        }
+      } else {
+        if (document.activeElement === lastElement) {
+          firstElement.focus();
+          e.preventDefault();
+        }
+      }
+    };
+
+    window.addEventListener('keydown', handleTabTrap);
+    return () => {
+      clearTimeout(timer);
+      window.removeEventListener('keydown', handleTabTrap);
+    };
+  }, [isStatusDrawerOpen]);
+
+  React.useEffect(() => {
+    if (isStatusDrawerOpen) {
+      document.body.classList.add('overflow-hidden');
+    } else {
+      document.body.classList.remove('overflow-hidden');
+    }
+    return () => {
+      document.body.classList.remove('overflow-hidden');
+    };
+  }, [isStatusDrawerOpen]);
+
+  React.useEffect(() => {
+    if (!isSeverityDrawerOpen) return;
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        closeSeverityDrawer();
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [isSeverityDrawerOpen, severityTriggerId]);
+
+  React.useEffect(() => {
+    if (!isSeverityDrawerOpen) return;
+
+    const timer = setTimeout(() => {
+      const closeBtn = severityDrawerRef.current?.querySelector('button[aria-label="Close severity decision review"]') as HTMLElement;
+      if (closeBtn) {
+        closeBtn.focus();
+      }
+    }, 50);
+
+    const handleTabTrap = (e: KeyboardEvent) => {
+      if (e.key !== 'Tab') return;
+      if (!severityDrawerRef.current) return;
+
+      const focusableSelectors = 'button:not([disabled]), [href], input, select, textarea, [tabindex="0"]';
+      const focusableElements = severityDrawerRef.current.querySelectorAll(focusableSelectors);
+      if (focusableElements.length === 0) return;
+
+      const firstElement = focusableElements[0] as HTMLElement;
+      const lastElement = focusableElements[focusableElements.length - 1] as HTMLElement;
+
+      if (e.shiftKey) {
+        if (document.activeElement === firstElement) {
+          lastElement.focus();
+          e.preventDefault();
+        }
+      } else {
+        if (document.activeElement === lastElement) {
+          firstElement.focus();
+          e.preventDefault();
+        }
+      }
+    };
+
+    window.addEventListener('keydown', handleTabTrap);
+    return () => {
+      clearTimeout(timer);
+      window.removeEventListener('keydown', handleTabTrap);
+    };
+  }, [isSeverityDrawerOpen]);
+
+  React.useEffect(() => {
+    if (isSeverityDrawerOpen) {
+      document.body.classList.add('overflow-hidden');
+    } else {
+      document.body.classList.remove('overflow-hidden');
+    }
+    return () => {
+      document.body.classList.remove('overflow-hidden');
+    };
+  }, [isSeverityDrawerOpen]);
+
+  React.useEffect(() => {
+    if (isSeverityValidated) {
+      const currentSeverity = selectedSeverity;
+      const currentRationale = severityRationale;
+      const currentAiSuggestionInformed = isAiSuggestionInformed;
+
+      if (
+        currentSeverity !== lastValidatedSeverity ||
+        currentRationale !== lastValidatedRationale ||
+        currentAiSuggestionInformed !== lastValidatedAiSuggestionInformed
+      ) {
+        setIsSeverityPreviewStale(true);
+      } else {
+        setIsSeverityPreviewStale(false);
+      }
+    }
+  }, [selectedSeverity, severityRationale, isAiSuggestionInformed, isSeverityValidated, lastValidatedSeverity, lastValidatedRationale, lastValidatedAiSuggestionInformed]);
+
+  React.useEffect(() => {
     if (!isDrawerOpen) return;
 
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -393,6 +910,8 @@ export function IncidentRoomPage() {
   }, [isDrawerOpen]);
 
   const openDrawer = (task: typeof suggestedTasks[0]) => {
+    setIsStatusDrawerOpen(false);
+    setIsSeverityDrawerOpen(false);
     setSelectedTask(task);
     setDrawerTitle(task.title);
     setDrawerDescription(task.description);
@@ -514,6 +1033,8 @@ export function IncidentRoomPage() {
   }, [isLifecycleDrawerOpen]);
 
   const openLifecycleDrawer = (preview: typeof localPreviews[0]) => {
+    setIsStatusDrawerOpen(false);
+    setIsSeverityDrawerOpen(false);
     setIsDrawerOpen(false); // Close review drawer if open
     setSelectedLifecyclePreview(preview);
     setIsLifecycleDrawerOpen(true);
@@ -1326,7 +1847,7 @@ export function IncidentRoomPage() {
             INCIDENT COMMAND CONTROLS
           </h3>
           <p className="text-[11px] text-[#A8AAA3]">
-            Operational controls are disabled during this preview phase.
+            Authoritative incident controls remain disabled. Add Note, Change Status, and Change Severity are available as local, non-authoritative previews.
           </p>
         </div>
 
@@ -1337,29 +1858,34 @@ export function IncidentRoomPage() {
             <span>BACKEND AUTHORITY REQUIRED</span>
           </div>
 
+          <div className="inline-flex items-center gap-1 text-[9px] font-mono font-bold text-amber-500 border border-amber-500/20 bg-amber-500/5 px-2.5 py-1 rounded-[1px] mr-1" style={{ fontFamily: 'var(--font-technical)' }}>
+            <span>LOCAL CONTROL PREVIEWS</span>
+            <span className="sr-only">LOCAL DRAFT PREVIEW</span>
+          </div>
+
           <button
+            id="add-note-trigger"
             type="button"
-            disabled
-            aria-disabled="true"
-            className="px-2.5 py-1 text-[10px] font-mono font-bold tracking-wider text-[#5C5E58] border border-[#242522] bg-[#141513]/30 rounded-[1px] cursor-not-allowed opacity-50"
+            onClick={openNoteDrawer}
+            className="px-2.5 py-1 text-[10px] font-mono font-bold tracking-wider text-[#F3F1EA] border border-[#242522] bg-[#141513] hover:bg-[#D6FF3F]/10 hover:border-[#D6FF3F]/40 hover:text-[#D6FF3F] rounded-[1px] cursor-pointer transition-colors"
             style={{ fontFamily: 'var(--font-technical)' }}
           >
             ADD NOTE
           </button>
           <button
+            id="change-status-trigger"
             type="button"
-            disabled
-            aria-disabled="true"
-            className="px-2.5 py-1 text-[10px] font-mono font-bold tracking-wider text-[#5C5E58] border border-[#242522] bg-[#141513]/30 rounded-[1px] cursor-not-allowed opacity-50"
+            onClick={openStatusDrawer}
+            className="px-2.5 py-1 text-[10px] font-mono font-bold tracking-wider text-[#F3F1EA] border border-[#242522] bg-[#141513] hover:bg-[#D6FF3F]/10 hover:border-[#D6FF3F]/40 hover:text-[#D6FF3F] rounded-[1px] cursor-pointer transition-colors"
             style={{ fontFamily: 'var(--font-technical)' }}
           >
             CHANGE STATUS
           </button>
           <button
+            id="change-severity-trigger"
             type="button"
-            disabled
-            aria-disabled="true"
-            className="px-2.5 py-1 text-[10px] font-mono font-bold tracking-wider text-[#5C5E58] border border-[#242522] bg-[#141513]/30 rounded-[1px] cursor-not-allowed opacity-50"
+            onClick={openSeverityDrawer}
+            className="px-2.5 py-1 text-[10px] font-mono font-bold tracking-wider text-[#F3F1EA] border border-[#242522] bg-[#141513] hover:bg-[#D6FF3F]/10 hover:border-[#D6FF3F]/40 hover:text-[#D6FF3F] rounded-[1px] cursor-pointer transition-colors"
             style={{ fontFamily: 'var(--font-technical)' }}
           >
             CHANGE SEVERITY
@@ -2293,6 +2819,20 @@ export function IncidentRoomPage() {
                 </button>
 
                 <button
+                  id="preview-commander-assignment"
+                  type="button"
+                  onClick={openCommanderDrawer}
+                  className="w-full py-2.5 px-4 border border-[#242522] bg-[#141513]/20 hover:bg-[#D6FF3F]/10 hover:border-[#D6FF3F]/40 text-[10px] font-mono font-bold text-[#F3F1EA] hover:text-[#D6FF3F] rounded-[1px] cursor-pointer uppercase text-center transition-colors"
+                  style={{ fontFamily: 'var(--font-technical)' }}
+                >
+                  PREVIEW COMMANDER ASSIGNMENT
+                </button>
+                <div className="flex items-center justify-between text-[8px] font-mono text-[#5C5E58]" style={{ fontFamily: 'var(--font-technical)' }}>
+                  <span>SUPPORTING STATE</span>
+                  <span className="text-amber-500 font-bold uppercase">FRONTEND READINESS REVIEW</span>
+                </div>
+
+                <button
                   id="assign-incident-commander"
                   disabled
                   aria-disabled="true"
@@ -2394,6 +2934,2013 @@ export function IncidentRoomPage() {
           <span className="font-bold uppercase">REALTIME CONNECTION / NOT ACTIVE</span>
         </div>
       </footer>
+
+      {/* Commander Assignment Drawer */}
+      {isCommanderDrawerOpen && (
+        <div className="fixed inset-0 z-50 flex justify-end">
+          {/* Overlay */}
+          <div 
+            onClick={closeCommanderDrawer}
+            className="fixed inset-0 bg-black/60 backdrop-blur-[1px] transition-opacity duration-200"
+            aria-hidden="true"
+          />
+          
+          {/* Drawer container */}
+          <div 
+            ref={commanderDrawerRef}
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="commander-assignment-title"
+            className="relative w-full sm:w-[520px] h-full bg-[#0E0F0D] border-l border-[#242522] flex flex-col shadow-2xl z-10 rounded-none overflow-hidden text-left animate-in fade-in slide-in-from-right duration-200"
+          >
+            {/* Header */}
+            <div className="border-b border-[#242522] bg-[#141513]/30 px-6 py-4 flex items-center justify-between shrink-0">
+              <div className="text-left">
+                <h2 id="commander-assignment-title" className="text-xs font-mono font-bold text-[#F3F1EA] tracking-wider uppercase" style={{ fontFamily: 'var(--font-technical)' }}>
+                  COMMANDER ASSIGNMENT
+                </h2>
+                <span className="text-[9px] font-mono font-bold text-[#5C5E58] tracking-widest uppercase block mt-0.5" style={{ fontFamily: 'var(--font-technical)' }}>
+                  MEMBERSHIP & AUTHORITY REVIEW / FRONTEND PREVIEW
+                </span>
+              </div>
+              
+              <div className="flex items-center gap-4">
+                <div className="hidden md:block text-right font-mono text-[8px] text-[#5C5E58] space-y-0.5" style={{ fontFamily: 'var(--font-technical)' }}>
+                  <div>INCIDENT: <span className="text-[#8C8E88] font-bold">SF-2026-0042</span></div>
+                  <div>CURRENT: <span className="text-amber-500 font-bold">UNASSIGNED</span></div>
+                  <div>STATE: <span className="text-amber-500 font-bold">NOT CREATED</span></div>
+                </div>
+                
+                <button
+                  onClick={closeCommanderDrawer}
+                  aria-label="Close commander assignment review"
+                  className="p-1.5 border border-[#242522] hover:bg-[#141513] text-[#8C8E88] hover:text-[#F3F1EA] rounded-[1px] transition-colors cursor-pointer"
+                >
+                  <X className="w-3.5 h-3.5" />
+                </button>
+              </div>
+            </div>
+
+            {/* Scrollable content area */}
+            <div className="flex-1 overflow-y-auto p-6 space-y-6">
+              
+              {/* SECTION 1: CURRENT COMMAND STATE */}
+              <section className="space-y-3">
+                <div className="flex items-center gap-2 border-b border-[#242522] pb-1.5">
+                  <span className="text-[#5C5E58] font-mono font-bold text-[8px] tracking-widest uppercase" style={{ fontFamily: 'var(--font-technical)' }}>
+                    01 / CURRENT COMMAND STATE
+                  </span>
+                </div>
+                
+                <div className="grid grid-cols-2 gap-x-4 gap-y-2.5 text-[10px] font-mono" style={{ fontFamily: 'var(--font-technical)' }}>
+                  <div className="border-b border-[#242522]/20 pb-1">
+                    <span className="block text-[8px] text-[#5C5E58] font-bold uppercase">INCIDENT COMMANDER</span>
+                    <span className="font-semibold text-amber-500 uppercase">UNASSIGNED</span>
+                  </div>
+                  <div className="border-b border-[#242522]/20 pb-1">
+                    <span className="block text-[8px] text-[#5C5E58] font-bold uppercase">INCIDENT STATUS</span>
+                    <span className="font-semibold text-[#8C8E88] uppercase">REPORTED</span>
+                  </div>
+                  <div className="border-b border-[#242522]/20 pb-1">
+                    <span className="block text-[8px] text-[#5C5E58] font-bold uppercase">SERVICE</span>
+                    <span className="font-semibold text-[#8C8E88] uppercase">PAYMENTS API</span>
+                  </div>
+                  <div className="border-b border-[#242522]/20 pb-1">
+                    <span className="block text-[8px] text-[#5C5E58] font-bold uppercase">COMMAND AUTHORITY</span>
+                    <span className="font-semibold text-[#8C8E88] uppercase">NOT VERIFIED</span>
+                  </div>
+                  <div className="border-b border-[#242522]/20 pb-1">
+                    <span className="block text-[8px] text-[#5C5E58] font-bold uppercase">MEMBERSHIP DATA</span>
+                    <span className="font-semibold text-[#8C8E88] uppercase">NOT LOADED</span>
+                  </div>
+                  <div className="border-b border-[#242522]/20 pb-1">
+                    <span className="block text-[8px] text-[#5C5E58] font-bold uppercase">ASSIGNMENT RECORD</span>
+                    <span className="font-semibold text-amber-500 uppercase">NOT CREATED</span>
+                  </div>
+                </div>
+                
+                <p className="text-[11px] text-[#A8AAA3] leading-relaxed font-sans font-normal">
+                  No incident commander has been assigned. SignalFold requires a verified active organization member with sufficient command authority before assignment can occur.
+                </p>
+              </section>
+
+              {/* SECTION 2: ELIGIBLE MEMBER DIRECTORY */}
+              <section className="space-y-3">
+                <div className="flex items-center gap-2 border-b border-[#242522] pb-1.5">
+                  <span className="text-[#5C5E58] font-mono font-bold text-[8px] tracking-widest uppercase" style={{ fontFamily: 'var(--font-technical)' }}>
+                    02 / ELIGIBLE MEMBER DIRECTORY
+                  </span>
+                </div>
+                
+                <div className="space-y-2">
+                  <label htmlFor="commander-candidate-select" className="block text-[8px] font-mono font-bold text-[#5C5E58] uppercase" style={{ fontFamily: 'var(--font-technical)' }}>
+                    COMMANDER CANDIDATE
+                  </label>
+                  <select
+                    id="commander-candidate-select"
+                    disabled
+                    aria-disabled="true"
+                    className="w-full bg-[#141513]/10 border border-[#242522] text-[#8C8E88] text-[10px] font-mono px-3 py-2 rounded-[1px] cursor-not-allowed uppercase text-left"
+                    style={{ fontFamily: 'var(--font-technical)' }}
+                  >
+                    <option>MEMBERSHIP DATA NOT LOADED</option>
+                  </select>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 text-[9px] font-mono text-[#5C5E58]" style={{ fontFamily: 'var(--font-technical)' }}>
+                  <div>
+                    <span className="block text-[8px] font-bold text-[#5C5E58] uppercase">ELIGIBLE MEMBERS</span>
+                    <span className="text-[#8C8E88] font-semibold block uppercase truncate">NOT AVAILABLE</span>
+                  </div>
+                  <div>
+                    <span className="block text-[8px] font-bold text-[#5C5E58] uppercase">DIRECTORY SOURCE</span>
+                    <span className="text-[#8C8E88] font-semibold block uppercase truncate">ACTIVE MEMBERSHIP</span>
+                  </div>
+                  <div>
+                    <span className="block text-[8px] font-bold text-[#5C5E58] uppercase">CONNECTION STATE</span>
+                    <span className="text-[#8C8E88] font-semibold block uppercase truncate">BACKEND REQUIRED</span>
+                  </div>
+                </div>
+
+                <p className="text-[11px] text-[#A8AAA3] leading-relaxed font-sans font-normal">
+                  Eligible Incident Manager and Organization Admin members will appear after authenticated organization membership is loaded.
+                </p>
+              </section>
+
+              {/* SECTION 3: CURRENT OPERATOR CONTEXT */}
+              <section className="space-y-3">
+                <div className="flex items-center gap-2 border-b border-[#242522] pb-1.5">
+                  <span className="text-[#5C5E58] font-mono font-bold text-[8px] tracking-widest uppercase" style={{ fontFamily: 'var(--font-technical)' }}>
+                    03 / CURRENT OPERATOR CONTEXT
+                  </span>
+                </div>
+                
+                <div className="grid grid-cols-2 gap-x-4 gap-y-2.5 text-[10px] font-mono" style={{ fontFamily: 'var(--font-technical)' }}>
+                  <div className="border-b border-[#242522]/20 pb-1">
+                    <span className="block text-[8px] text-[#5C5E58] font-bold uppercase">IDENTITY</span>
+                    <span className="font-semibold text-[#8C8E88] block uppercase truncate">CURRENT OPERATOR</span>
+                  </div>
+                  <div className="border-b border-[#242522]/20 pb-1">
+                    <span className="block text-[8px] text-[#5C5E58] font-bold uppercase">IDENTITY SOURCE</span>
+                    <span className="font-semibold text-[#8C8E88] block uppercase truncate">FRONTEND PREVIEW</span>
+                  </div>
+                  <div className="border-b border-[#242522]/20 pb-1">
+                    <span className="block text-[8px] text-[#5C5E58] font-bold uppercase">ORGANIZATION MEMBERSHIP</span>
+                    <span className="font-semibold text-[#8C8E88] block uppercase truncate">NOT VERIFIED</span>
+                  </div>
+                  <div className="border-b border-[#242522]/20 pb-1">
+                    <span className="block text-[8px] text-[#5C5E58] font-bold uppercase">OPERATING ROLE</span>
+                    <span className="font-semibold text-[#8C8E88] block uppercase truncate">NOT LOADED</span>
+                  </div>
+                  <div className="border-b border-[#242522]/20 pb-1">
+                    <span className="block text-[8px] text-[#5C5E58] font-bold uppercase">COMMANDER ELIGIBILITY</span>
+                    <span className="font-semibold text-[#8C8E88] block uppercase truncate">NOT DETERMINED</span>
+                  </div>
+                  <div className="border-b border-[#242522]/20 pb-1">
+                    <span className="block text-[8px] text-[#5C5E58] font-bold uppercase">TENANT ACCESS</span>
+                    <span className="font-semibold text-[#8C8E88] block uppercase truncate">NOT VERIFIED</span>
+                  </div>
+                </div>
+              </section>
+
+              {/* SECTION 4: ASSIGNMENT READINESS */}
+              <section className="space-y-3">
+                <div className="flex items-center gap-2 border-b border-[#242522] pb-1.5">
+                  <span className="text-[#5C5E58] font-mono font-bold text-[8px] tracking-widest uppercase" style={{ fontFamily: 'var(--font-technical)' }}>
+                    04 / ASSIGNMENT READINESS
+                  </span>
+                </div>
+                
+                <div className="border border-[#242522] bg-[#141513]/10 p-4 rounded-[1px] space-y-2 text-[10px] font-mono" style={{ fontFamily: 'var(--font-technical)' }}>
+                  <div className="flex items-center justify-between border-b border-[#242522]/30 pb-1">
+                    <span className="text-[#5C5E58] font-bold uppercase">AUTHENTICATED USER</span>
+                    <span className="text-amber-500/80 font-bold uppercase">REQUIRED</span>
+                  </div>
+                  <div className="flex items-center justify-between border-b border-[#242522]/30 pb-1">
+                    <span className="text-[#5C5E58] font-bold uppercase">ACTIVE ORGANIZATION MEMBERSHIP</span>
+                    <span className="text-amber-500/80 font-bold uppercase">REQUIRED</span>
+                  </div>
+                  <div className="flex items-center justify-between border-b border-[#242522]/30 pb-1">
+                    <span className="text-[#5C5E58] font-bold uppercase">INCIDENT MANAGER OR ADMIN ROLE</span>
+                    <span className="text-amber-500/80 font-bold uppercase">REQUIRED</span>
+                  </div>
+                  <div className="flex items-center justify-between border-b border-[#242522]/30 pb-1">
+                    <span className="text-[#5C5E58] font-bold uppercase">TENANT ACCESS</span>
+                    <span className="text-amber-500/80 font-bold uppercase">REQUIRED</span>
+                  </div>
+                  <div className="flex items-center justify-between border-b border-[#242522]/30 pb-1">
+                    <span className="text-[#5C5E58] font-bold uppercase">CANDIDATE SELECTION</span>
+                    <span className="text-amber-500/80 font-bold uppercase">NOT AVAILABLE</span>
+                  </div>
+                  <div className="flex items-center justify-between border-b border-[#242522]/30 pb-1">
+                    <span className="text-[#5C5E58] font-bold uppercase">SERVER-CONTROLLED UPDATE</span>
+                    <span className="text-amber-500/80 font-bold uppercase">REQUIRED</span>
+                  </div>
+                  <div className="flex items-center justify-between border-b border-[#242522]/30 pb-1">
+                    <span className="text-[#5C5E58] font-bold uppercase">TIMELINE AUDIT EVENT</span>
+                    <span className="text-amber-500/80 font-bold uppercase">REQUIRED</span>
+                  </div>
+                  <div className="flex items-center justify-between pb-1">
+                    <span className="text-[#5C5E58] font-bold uppercase">REALTIME PROPAGATION</span>
+                    <span className="text-amber-500/80 font-bold uppercase">REQUIRED</span>
+                  </div>
+                </div>
+
+                <div className="p-3 bg-amber-500/5 border border-amber-500/10 rounded-[1px] space-y-1 text-left">
+                  <div className="flex items-center gap-1.5 text-[10px] font-mono font-bold text-amber-500 uppercase" style={{ fontFamily: 'var(--font-technical)' }}>
+                    <AlertTriangle className="w-3.5 h-3.5" />
+                    <span>COMMANDER ASSIGNMENT: NOT READY</span>
+                  </div>
+                  <p className="text-[10px] text-[#A8AAA3] font-mono" style={{ fontFamily: 'var(--font-technical)' }}>
+                    REASON: MEMBERSHIP AND ROLE DATA NOT CONNECTED
+                  </p>
+                </div>
+              </section>
+
+              {/* LOCAL READINESS VALIDATION */}
+              <section className="space-y-3 pt-2">
+                <button
+                  id="validate-assignment-readiness"
+                  type="button"
+                  onClick={() => setIsCommanderValidated(true)}
+                  className="w-full py-2.5 px-4 bg-[#141513] hover:bg-[#D6FF3F]/10 border border-[#242522] hover:border-[#D6FF3F]/50 text-[10px] font-mono font-bold text-[#F3F1EA] hover:text-[#D6FF3F] rounded-[1px] transition-all cursor-pointer flex items-center justify-center gap-2 uppercase text-center"
+                  style={{ fontFamily: 'var(--font-technical)' }}
+                >
+                  VALIDATE ASSIGNMENT READINESS
+                </button>
+
+                {isCommanderValidated && (
+                  <div 
+                    aria-live="assertive" 
+                    className="p-4 border border-amber-500/20 bg-amber-500/5 space-y-2.5 text-left rounded-[1px]"
+                  >
+                    <div className="flex items-center gap-2">
+                      <AlertTriangle className="w-3.5 h-3.5 text-amber-500" aria-hidden="true" />
+                      <span className="text-xs font-mono font-bold text-amber-500 uppercase" style={{ fontFamily: 'var(--font-technical)' }}>
+                        ASSIGNMENT READINESS INCOMPLETE
+                      </span>
+                    </div>
+                    <p className="text-[11px] text-[#A8AAA3] leading-relaxed font-sans font-normal">
+                      Commander assignment cannot proceed until authenticated membership, role authority, tenant access, and an eligible candidate are loaded and verified.
+                    </p>
+                    <div className="space-y-1.5 pt-1">
+                      <span className="block text-[8px] font-mono font-bold text-[#5C5E58] tracking-wider uppercase" style={{ fontFamily: 'var(--font-technical)' }}>
+                        UNRESOLVED REQUIREMENTS
+                      </span>
+                      <ul className="list-disc pl-4 text-[10px] font-mono text-amber-500/80 space-y-1" style={{ fontFamily: 'var(--font-technical)' }}>
+                        <li>ACTIVE MEMBERSHIP NOT VERIFIED</li>
+                        <li>OPERATING ROLE NOT LOADED</li>
+                        <li>ELIGIBLE CANDIDATE NOT SELECTED</li>
+                        <li>SERVER AUTHORITY NOT CONNECTED</li>
+                      </ul>
+                    </div>
+                  </div>
+                )}
+              </section>
+
+              {/* FUTURE ASSIGNMENT PREVIEW */}
+              <section className="space-y-3 pt-2">
+                <div className="flex items-center justify-between border-b border-[#242522] pb-1.5">
+                  <span className="text-[#5C5E58] font-mono font-bold text-[8px] tracking-widest uppercase" style={{ fontFamily: 'var(--font-technical)' }}>
+                    FUTURE ASSIGNMENT RECORD
+                  </span>
+                  <span className="text-[8px] font-mono font-bold bg-[#141513] border border-[#242522] text-[#8C8E88] px-1.5 py-0.5 rounded-[1px]" style={{ fontFamily: 'var(--font-technical)' }}>
+                    SCHEMA PREVIEW ONLY
+                  </span>
+                </div>
+
+                <div className="border border-[#242522] bg-[#0E0F0D] p-4 rounded-[1px] space-y-2 text-[10px] font-mono" style={{ fontFamily: 'var(--font-technical)' }}>
+                  <div className="flex items-center justify-between border-b border-[#242522]/20 pb-1">
+                    <span className="text-[#5C5E58] font-bold uppercase">COMMANDER</span>
+                    <span className="text-[#8C8E88] font-semibold uppercase">SELECTED ACTIVE MEMBER</span>
+                  </div>
+                  <div className="flex items-center justify-between border-b border-[#242522]/20 pb-1">
+                    <span className="text-[#5C5E58] font-bold uppercase">ASSIGNED BY</span>
+                    <span className="text-[#8C8E88] font-semibold uppercase">AUTHENTICATED INCIDENT MANAGER OR ADMIN</span>
+                  </div>
+                  <div className="flex items-center justify-between border-b border-[#242522]/20 pb-1">
+                    <span className="text-[#5C5E58] font-bold uppercase">INCIDENT UPDATE</span>
+                    <span className="text-[#8C8E88] font-semibold uppercase">SERVER CONTROLLED</span>
+                  </div>
+                  <div className="flex items-center justify-between border-b border-[#242522]/20 pb-1">
+                    <span className="text-[#5C5E58] font-bold uppercase">AUDIT EVENT</span>
+                    <span className="text-[#8C8E88] font-semibold uppercase">COMMANDER_ASSIGNED</span>
+                  </div>
+                  <div className="flex items-center justify-between border-b border-[#242522]/20 pb-1">
+                    <span className="text-[#5C5E58] font-bold uppercase">ASSIGNED TIME</span>
+                    <span className="text-[#8C8E88] font-semibold uppercase">SERVER GENERATED</span>
+                  </div>
+                  <div className="flex items-center justify-between pb-1">
+                    <span className="text-[#5C5E58] font-bold uppercase">REALTIME UPDATE</span>
+                    <span className="text-[#8C8E88] font-semibold uppercase">REQUIRED</span>
+                  </div>
+                </div>
+              </section>
+
+              {/* COMMANDER ASSIGNMENT CONTRACT */}
+              <section className="space-y-3 pt-4 border-t border-[#242522]/40">
+                <div className="flex items-center gap-2 pb-1">
+                  <span className="text-[#5C5E58] font-mono font-bold text-[8px] tracking-widest uppercase" style={{ fontFamily: 'var(--font-technical)' }}>
+                    COMMANDER ASSIGNMENT CONTRACT
+                  </span>
+                </div>
+
+                <div className="grid grid-cols-2 gap-x-4 gap-y-2 text-[9px] font-mono text-[#5C5E58]" style={{ fontFamily: 'var(--font-technical)' }}>
+                  <div>
+                    <span className="block text-[8px] text-[#5C5E58] font-bold uppercase">CANDIDATE</span>
+                    <span className="text-[#8C8E88] font-semibold uppercase">ACTIVE MEMBER</span>
+                  </div>
+                  <div>
+                    <span className="block text-[8px] text-[#5C5E58] font-bold uppercase">REQUIRED ROLE</span>
+                    <span className="text-[#8C8E88] font-semibold uppercase">MANAGER OR ADMIN</span>
+                  </div>
+                  <div>
+                    <span className="block text-[8px] text-[#5C5E58] font-bold uppercase">TENANT AUTHORITY</span>
+                    <span className="text-[#8C8E88] font-semibold uppercase">SERVER VERIFIED</span>
+                  </div>
+                  <div>
+                    <span className="block text-[8px] text-[#5C5E58] font-bold uppercase">INCIDENT UPDATE</span>
+                    <span className="text-[#8C8E88] font-semibold uppercase">SERVER CONTROLLED</span>
+                  </div>
+                  <div>
+                    <span className="block text-[8px] text-[#5C5E58] font-bold uppercase">AUDIT EVENT</span>
+                    <span className="text-[#8C8E88] font-semibold uppercase">APPEND-ONLY</span>
+                  </div>
+                  <div>
+                    <span className="block text-[8px] text-[#5C5E58] font-bold uppercase">TIMESTAMP</span>
+                    <span className="text-[#8C8E88] font-semibold uppercase">SERVER GENERATED</span>
+                  </div>
+                  <div>
+                    <span className="block text-[8px] text-[#5C5E58] font-bold uppercase">REALTIME</span>
+                    <span className="text-[#8C8E88] font-semibold uppercase">INCIDENT SUBSCRIPTION</span>
+                  </div>
+                  <div>
+                    <span className="block text-[8px] text-[#5C5E58] font-bold uppercase">CONFLICT HANDLING</span>
+                    <span className="text-[#8C8E88] font-semibold uppercase">AUTHORITATIVE</span>
+                  </div>
+                </div>
+
+                <div className="p-3 bg-amber-500/5 border border-amber-500/10 rounded-[1px] space-y-1 text-left">
+                  <div className="text-[9px] font-mono font-bold text-amber-500 uppercase" style={{ fontFamily: 'var(--font-technical)' }}>
+                    FRONTEND SELECTION IS NOT COMMAND AUTHORITY.
+                  </div>
+                  <p className="text-[10px] text-[#A8AAA3] leading-relaxed font-sans font-normal">
+                    The backend must verify membership, role, organization access, and the current incident state before accepting a commander assignment.
+                  </p>
+                </div>
+              </section>
+
+            </div>
+
+            {/* Drawer footer actions */}
+            <div className="border-t border-[#242522] bg-[#141513]/30 p-6 space-y-4 shrink-0">
+              <div className="space-y-2">
+                <button
+                  id="drawer-assign-incident-commander"
+                  disabled
+                  aria-disabled="true"
+                  className="w-full py-2.5 px-4 border border-[#242522] bg-[#141513]/10 text-[10px] font-mono font-bold text-[#5C5E58] rounded-[1px] cursor-not-allowed uppercase text-center"
+                  style={{ fontFamily: 'var(--font-technical)' }}
+                >
+                  ASSIGN INCIDENT COMMANDER
+                </button>
+                <div className="flex items-center justify-between text-[8px] font-mono text-[#5C5E58]" style={{ fontFamily: 'var(--font-technical)' }}>
+                  <span>STATUS</span>
+                  <span className="text-amber-500 font-bold uppercase">BACKEND AUTHORITY REQUIRED</span>
+                </div>
+                <p className="text-[10px] text-[#8C8E88] leading-normal font-sans font-normal text-left">
+                  The real assignment action will become available only after an eligible active member is selected and server-side authority checks succeed.
+                </p>
+              </div>
+
+              <button
+                type="button"
+                onClick={closeCommanderDrawer}
+                className="w-full py-2 px-4 border border-[#242522] bg-[#0E0F0D] hover:bg-[#141513] text-[10px] font-mono font-bold text-[#F3F1EA] rounded-[1px] cursor-pointer uppercase text-center transition-colors"
+                style={{ fontFamily: 'var(--font-technical)' }}
+              >
+                CLOSE REVIEW
+              </button>
+            </div>
+
+          </div>
+        </div>
+      )}
+
+      {/* Change Status Drawer (Phase 02) */}
+      {isStatusDrawerOpen && (
+        <div className="fixed inset-0 z-50 flex justify-end">
+          {/* Overlay */}
+          <div 
+            onClick={closeStatusDrawer}
+            className="fixed inset-0 bg-black/60 backdrop-blur-[1px] transition-opacity duration-200"
+            aria-hidden="true"
+          />
+          
+          {/* Drawer container */}
+          <div 
+            ref={statusDrawerRef}
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="change-incident-status-title"
+            className="relative w-full min-[1000px]:w-[520px] h-full bg-[#0E0F0D] border-l border-[#242522] flex flex-col shadow-2xl z-10 rounded-none overflow-hidden text-left"
+          >
+            {/* Header */}
+            <div className="border-b border-[#242522] bg-[#141513]/30 px-6 py-4 flex items-center justify-between shrink-0">
+              <div className="text-left">
+                <h2 id="change-incident-status-title" className="text-xs font-mono font-bold text-[#F3F1EA] tracking-wider uppercase" style={{ fontFamily: 'var(--font-technical)' }}>
+                  CHANGE INCIDENT STATUS
+                </h2>
+                <span className="text-[9px] font-mono font-bold text-[#5C5E58] tracking-widest uppercase block mt-0.5" style={{ fontFamily: 'var(--font-technical)' }}>
+                  STATE TRANSITION / FRONTEND PREVIEW
+                </span>
+              </div>
+              <button
+                onClick={closeStatusDrawer}
+                aria-label="Close status transition review"
+                className="p-1.5 border border-[#242522] hover:bg-[#141513] text-[#8C8E88] hover:text-[#F3F1EA] rounded-[1px] transition-colors cursor-pointer"
+              >
+                <X className="w-3.5 h-3.5" aria-hidden="true" />
+              </button>
+            </div>
+
+            {/* Header Metadata */}
+            <div className="border-b border-[#242522] bg-[#141513]/10 px-6 py-3.5 grid grid-cols-2 gap-x-4 gap-y-2.5 text-[10px] font-mono shrink-0" style={{ fontFamily: 'var(--font-technical)' }}>
+              <div>
+                <span className="block text-[8px] text-[#5C5E58] font-bold uppercase">INCIDENT</span>
+                <span className="text-[#F3F1EA] font-semibold">SF-2026-0042</span>
+              </div>
+              <div>
+                <span className="block text-[8px] text-[#5C5E58] font-bold uppercase">CURRENT STATUS</span>
+                <span className="text-[#8C8E88] font-semibold">REPORTED</span>
+              </div>
+              <div>
+                <span className="block text-[8px] text-[#5C5E58] font-bold uppercase">TRANSITION STATE</span>
+                <span className={`font-semibold uppercase ${
+                  !isStatusValidated ? 'text-[#8C8E88]' : isStatusPreviewStale ? 'text-amber-500' : 'text-amber-500'
+                }`}>
+                  {!isStatusValidated ? 'NOT CREATED' : isStatusPreviewStale ? 'DRAFT CHANGED' : 'LOCAL PREVIEW READY'}
+                </span>
+              </div>
+              <div>
+                <span className="block text-[8px] text-[#5C5E58] font-bold uppercase">PERSISTENCE</span>
+                <span className="text-[#8C8E88] font-semibold uppercase">NOT CONNECTED</span>
+              </div>
+            </div>
+
+            {/* Scrollable Content */}
+            <div className="flex-1 overflow-y-auto p-6 space-y-6">
+              
+              {/* SECTION 01 — CURRENT INCIDENT STATE */}
+              <section className="space-y-3 text-left">
+                <div className="flex items-center gap-2 border-b border-[#242522] pb-1.5">
+                  <span className="text-[#5C5E58] font-mono font-bold text-[8px] tracking-widest uppercase" style={{ fontFamily: 'var(--font-technical)' }}>
+                    01 / CURRENT INCIDENT STATE
+                  </span>
+                </div>
+                <div className="grid grid-cols-2 gap-x-4 gap-y-2 text-[10px] font-mono" style={{ fontFamily: 'var(--font-technical)' }}>
+                  <div className="border-b border-[#242522]/20 pb-1 flex flex-col">
+                    <span className="text-[#5C5E58] font-bold uppercase">INCIDENT</span>
+                    <span className="font-semibold text-[#8C8E88] uppercase">SF-2026-0042</span>
+                  </div>
+                  <div className="border-b border-[#242522]/20 pb-1 flex flex-col">
+                    <span className="text-[#5C5E58] font-bold uppercase">SERVICE</span>
+                    <span className="font-semibold text-[#8C8E88] uppercase">PAYMENTS API</span>
+                  </div>
+                  <div className="border-b border-[#242522]/20 pb-1 flex flex-col">
+                    <span className="text-[#5C5E58] font-bold uppercase">CURRENT STATUS</span>
+                    <span className="font-semibold text-[#8C8E88] uppercase">REPORTED</span>
+                  </div>
+                  <div className="border-b border-[#242522]/20 pb-1 flex flex-col">
+                    <span className="text-[#5C5E58] font-bold uppercase">CONFIRMED SEVERITY</span>
+                    <span className="font-semibold text-[#8C8E88] uppercase">NOT CONFIRMED</span>
+                  </div>
+                  <div className="border-b border-[#242522]/20 pb-1 flex flex-col">
+                    <span className="text-[#5C5E58] font-bold uppercase">COMMANDER</span>
+                    <span className="font-semibold text-[#8C8E88] uppercase">UNASSIGNED</span>
+                  </div>
+                  <div className="border-b border-[#242522]/20 pb-1 flex flex-col">
+                    <span className="text-[#5C5E58] font-bold uppercase">STATE AUTHORITY</span>
+                    <span className="font-semibold text-[#8C8E88] uppercase">NOT VERIFIED</span>
+                  </div>
+                  <div className="col-span-2 border-b border-[#242522]/20 pb-1 flex flex-col">
+                    <span className="text-[#5C5E58] font-bold uppercase">TIMELINE</span>
+                    <span className="font-semibold text-[#8C8E88] uppercase">4 MOCK EVENTS / FRONTEND SEQUENCE</span>
+                  </div>
+                </div>
+                <p className="text-[11px] text-[#8C8E88] font-sans leading-relaxed">
+                  This review uses the current frontend incident snapshot. No incident status, timestamp, or Timeline record will change during this preview.
+                </p>
+              </section>
+
+              {/* SECTION 02 — TARGET STATUS */}
+              <section className="space-y-3.5 text-left">
+                <div className="flex items-center gap-2 border-b border-[#242522] pb-1.5">
+                  <span className="text-[#5C5E58] font-mono font-bold text-[8px] tracking-widest uppercase" style={{ fontFamily: 'var(--font-technical)' }}>
+                    02 / TARGET STATUS
+                  </span>
+                </div>
+
+                <div className="space-y-2">
+                  <label htmlFor="next-status-select" className="block text-[8px] text-[#5C5E58] font-bold uppercase tracking-widest" style={{ fontFamily: 'var(--font-technical)' }}>
+                    NEXT STATUS
+                  </label>
+                  <select
+                    id="next-status-select"
+                    value={targetStatus}
+                    onChange={(e) => {
+                      const val = e.target.value;
+                      setTargetStatus(val);
+                      if (isStatusValidated) {
+                        setIsStatusPreviewStale(true);
+                      }
+                    }}
+                    className="w-full h-8 px-2 bg-[#0E0F0D] border border-[#242522] text-xs font-mono text-[#F3F1EA] hover:border-[#D6FF3F]/30 focus:outline-none focus:border-[#D6FF3F] rounded-[1px] transition-colors"
+                    style={{ fontFamily: 'var(--font-technical)' }}
+                  >
+                    <option value="">SELECT A STATUS</option>
+                    <option value="TRIAGING">TRIAGING</option>
+                    <option value="INVESTIGATING">INVESTIGATING</option>
+                  </select>
+                </div>
+
+                {/* Select details */}
+                {targetStatus === 'TRIAGING' && (
+                  <div className="p-3 bg-[#141513]/30 border border-[#242522]/60 rounded-[1px] text-[11px] font-mono text-[#A8AAA3] space-y-1">
+                    <div className="font-bold text-[#F3F1EA] text-[10px]">TRIAGING STATUS DESCRIPTION</div>
+                    <p className="font-sans text-[10px] leading-relaxed text-[#8C8E88]">
+                      Initial assessment, impact clarification, and response coordination are underway.
+                    </p>
+                  </div>
+                )}
+
+                {targetStatus === 'INVESTIGATING' && (
+                  <div className="p-3 bg-[#141513]/30 border border-[#242522]/60 rounded-[1px] text-[11px] font-mono text-[#A8AAA3] space-y-1">
+                    <div className="font-bold text-[#F3F1EA] text-[10px]">INVESTIGATING STATUS DESCRIPTION</div>
+                    <p className="font-sans text-[10px] leading-relaxed text-[#8C8E88]">
+                      Responders are actively investigating the incident and testing possible causes.
+                    </p>
+                  </div>
+                )}
+
+                {/* Separately display the unavailable CLOSED status */}
+                <div className="p-3 bg-[#141513]/10 border border-[#242522]/40 rounded-[1px] text-[10px] font-mono text-left">
+                  <div className="flex items-center justify-between border-b border-[#242522]/40 pb-1.5 mb-1.5">
+                    <span className="text-[#5C5E58] font-bold">CLOSED</span>
+                    <span className="text-[8px] font-bold px-1.5 py-0.5 bg-neutral-800 text-neutral-400 border border-neutral-700/30 rounded-[1px] uppercase">
+                      NOT AVAILABLE
+                    </span>
+                  </div>
+                  <p className="text-[10px] text-[#5C5E58] font-sans">
+                    A CLOSED incident requires an already RESOLVED incident.
+                  </p>
+                </div>
+              </section>
+
+              {/* OPTIONAL TRANSITION CONTEXT */}
+              <section className="space-y-2.5 text-left">
+                <div>
+                  <label htmlFor="transition-context-textarea" className="block text-[8px] text-[#5C5E58] font-bold uppercase tracking-widest mb-1" style={{ fontFamily: 'var(--font-technical)' }}>
+                    TRANSITION CONTEXT
+                  </label>
+                  <span className="text-[9px] font-mono font-bold text-[#5C5E58] tracking-wider uppercase block mb-1.5" style={{ fontFamily: 'var(--font-technical)' }}>
+                    OPTIONAL LOCAL CONTEXT
+                  </span>
+                  <textarea
+                    id="transition-context-textarea"
+                    rows={3}
+                    value={transitionContext}
+                    onChange={(e) => {
+                      setTransitionContext(e.target.value);
+                      if (isStatusValidated) {
+                        setIsStatusPreviewStale(true);
+                      }
+                    }}
+                    placeholder="Explain why the incident should move to the selected status."
+                    className="w-full p-2.5 bg-[#0E0F0D] border border-[#242522] text-xs text-[#F3F1EA] placeholder-[#5C5E58] hover:border-[#D6FF3F]/30 focus:outline-none focus:border-[#D6FF3F] rounded-[1px] font-sans transition-colors resize-none"
+                  />
+                </div>
+                <p className="text-[10px] text-[#8C8E88] font-sans leading-relaxed">
+                  Transition context may support the future audit event but does not authorize or apply the status change.
+                </p>
+              </section>
+
+              {/* CURRENT OPERATOR CONTEXT */}
+              <section className="space-y-3 text-left">
+                <div className="flex items-center gap-2 border-b border-[#242522] pb-1.5">
+                  <span className="text-[#5C5E58] font-mono font-bold text-[8px] tracking-widest uppercase" style={{ fontFamily: 'var(--font-technical)' }}>
+                    CURRENT OPERATOR CONTEXT
+                  </span>
+                </div>
+                <div className="grid grid-cols-2 gap-x-4 gap-y-2 text-[10px] font-mono" style={{ fontFamily: 'var(--font-technical)' }}>
+                  <div className="border-b border-[#242522]/20 pb-1 flex flex-col">
+                    <span className="text-[#5C5E58] font-bold uppercase">IDENTITY</span>
+                    <span className="font-semibold text-[#8C8E88] uppercase">CURRENT OPERATOR</span>
+                  </div>
+                  <div className="border-b border-[#242522]/20 pb-1 flex flex-col">
+                    <span className="text-[#5C5E58] font-bold uppercase">IDENTITY SOURCE</span>
+                    <span className="font-semibold text-[#8C8E88] uppercase">FRONTEND PREVIEW</span>
+                  </div>
+                  <div className="border-b border-[#242522]/20 pb-1 flex flex-col">
+                    <span className="text-[#5C5E58] font-bold uppercase">ORGANIZATION MEMBERSHIP</span>
+                    <span className="font-semibold text-[#8C8E88] uppercase">NOT VERIFIED</span>
+                  </div>
+                  <div className="border-b border-[#242522]/20 pb-1 flex flex-col">
+                    <span className="text-[#5C5E58] font-bold uppercase">OPERATING ROLE</span>
+                    <span className="font-semibold text-[#8C8E88] uppercase">NOT LOADED</span>
+                  </div>
+                  <div className="col-span-2 border-b border-[#242522]/20 pb-1 flex flex-col">
+                    <span className="text-[#5C5E58] font-bold uppercase">STATUS AUTHORITY</span>
+                    <span className="font-semibold text-[#8C8E88] uppercase">NOT DETERMINED</span>
+                  </div>
+                </div>
+              </section>
+
+              {/* LOCAL TRANSITION VALIDATION & ACTION */}
+              <section className="space-y-4 text-left">
+                <div>
+                  <button
+                    type="button"
+                    disabled={!targetStatus}
+                    onClick={() => {
+                      setIsStatusValidated(true);
+                      setIsStatusPreviewStale(false);
+                      setLastValidatedTargetStatus(targetStatus);
+                      setLastValidatedContext(transitionContext);
+                    }}
+                    className={`w-full py-2 text-xs font-mono font-bold tracking-wider rounded-[1px] transition-colors ${
+                      targetStatus 
+                        ? 'bg-[#D6FF3F] hover:bg-[#D6FF3F]/90 text-black cursor-pointer' 
+                        : 'bg-[#141513] border border-[#242522] text-[#5C5E58] cursor-not-allowed'
+                    }`}
+                    style={{ fontFamily: 'var(--font-technical)' }}
+                  >
+                    VALIDATE TRANSITION
+                  </button>
+                  {!targetStatus && (
+                    <span className="block text-[9px] font-mono font-bold text-amber-500 uppercase tracking-widest mt-1.5 text-center" style={{ fontFamily: 'var(--font-technical)' }}>
+                      TARGET STATUS REQUIRED
+                    </span>
+                  )}
+                </div>
+
+                {isStatusValidated && (
+                  <div className="p-3 bg-amber-500/5 border border-amber-500/15 rounded-[1px] space-y-2">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1.5 border-b border-amber-500/10 pb-2">
+                      <span className="text-xs font-mono font-bold text-amber-500 uppercase" style={{ fontFamily: 'var(--font-technical)' }}>
+                        TRANSITION STRUCTURE VALID
+                      </span>
+                      <span className="text-[10px] font-mono font-bold text-[#F3F1EA] bg-amber-500/25 border border-amber-500/30 px-1.5 py-0.5 rounded-[1px] uppercase tracking-wider" style={{ fontFamily: 'var(--font-technical)' }}>
+                        AUTHORITY READINESS INCOMPLETE
+                      </span>
+                    </div>
+                    <p className="text-[10px] text-[#A8AAA3] font-sans leading-relaxed">
+                      The selected state-machine path is structurally valid, but the real status change requires authenticated Incident Manager authority and server confirmation.
+                    </p>
+                  </div>
+                )}
+              </section>
+
+              {/* SECTION 03 — LOCAL TRANSITION PREVIEW */}
+              {isStatusValidated && (
+                <section className={`space-y-3 text-left p-4 border rounded-[1px] transition-all duration-200 ${
+                  isStatusPreviewStale 
+                    ? 'border-dashed border-amber-500/30 bg-[#141513]/10 opacity-70' 
+                    : 'border-[#242522] bg-[#141513]/25'
+                }`}>
+                  <div className="flex items-center gap-2 border-b border-[#242522] pb-1.5">
+                    <span className="text-[#5C5E58] font-mono font-bold text-[8px] tracking-widest uppercase" style={{ fontFamily: 'var(--font-technical)' }}>
+                      03 / LOCAL TRANSITION PREVIEW
+                    </span>
+                  </div>
+
+                  {/* Preview State Badge */}
+                  <div className="flex items-center justify-between text-[10px] font-mono border-b border-[#242522]/20 pb-2" style={{ fontFamily: 'var(--font-technical)' }}>
+                    <span className="text-[#5C5E58] font-bold uppercase">PREVIEW STATE</span>
+                    <span className={`font-bold uppercase ${isStatusPreviewStale ? 'text-amber-500 animate-pulse' : 'text-[#D6FF3F]'}`}>
+                      {isStatusPreviewStale ? 'DRAFT CHANGED' : 'CURRENT LOCAL DRAFT'}
+                    </span>
+                  </div>
+
+                  {isStatusPreviewStale && (
+                    <div className="p-2 bg-amber-500/5 border border-amber-500/20 text-[9px] font-mono text-amber-500 uppercase tracking-wider text-center" style={{ fontFamily: 'var(--font-technical)' }}>
+                      DRAFT CHANGED - RE-VALIDATION REQUIRED
+                    </div>
+                  )}
+
+                  <div className="inline-flex items-center gap-1.5 text-[9px] font-mono font-bold text-amber-500 bg-amber-500/5 border border-amber-500/10 px-2 py-0.5 rounded-[1px]" style={{ fontFamily: 'var(--font-technical)' }}>
+                    <span>LOCAL PREVIEW ONLY</span>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-2 text-[10px] font-mono pt-1" style={{ fontFamily: 'var(--font-technical)' }}>
+                    <div className="border-b border-[#242522]/20 pb-1 flex flex-col">
+                      <span className="text-[#5C5E58] font-bold uppercase">BEFORE</span>
+                      <span className="font-semibold text-[#8C8E88] uppercase">REPORTED</span>
+                    </div>
+                    <div className="border-b border-[#242522]/20 pb-1 flex flex-col">
+                      <span className="text-[#5C5E58] font-bold uppercase">AFTER</span>
+                      <span className="font-semibold text-amber-500 uppercase">{lastValidatedTargetStatus}</span>
+                    </div>
+                    <div className="col-span-2 border-b border-[#242522]/20 pb-1.5 flex flex-col">
+                      <span className="text-[#5C5E58] font-bold uppercase mb-0.5">TRANSITION CONTEXT</span>
+                      <span className="text-[#F3F1EA] font-sans text-[11px] whitespace-pre-wrap leading-normal">
+                        {lastValidatedContext.trim() ? lastValidatedContext.trim() : 'NOT PROVIDED'}
+                      </span>
+                    </div>
+                    <div className="border-b border-[#242522]/20 pb-1 flex flex-col">
+                      <span className="text-[#5C5E58] font-bold uppercase">ACTOR</span>
+                      <span className="font-semibold text-[#8C8E88] uppercase">CURRENT OPERATOR / NOT VERIFIED</span>
+                    </div>
+                    <div className="border-b border-[#242522]/20 pb-1 flex flex-col">
+                      <span className="text-[#5C5E58] font-bold uppercase">ROLE AUTHORITY</span>
+                      <span className="font-semibold text-[#8C8E88] uppercase">NOT DETERMINED</span>
+                    </div>
+                    <div className="border-b border-[#242522]/20 pb-1 flex flex-col">
+                      <span className="text-[#5C5E58] font-bold uppercase">TIMESTAMP</span>
+                      <span className="font-semibold text-[#8C8E88] uppercase">NOT GENERATED</span>
+                    </div>
+                    <div className="border-b border-[#242522]/20 pb-1 flex flex-col">
+                      <span className="text-[#5C5E58] font-bold uppercase">PERSISTENCE</span>
+                      <span className="font-semibold text-[#8C8E88] uppercase">NOT CONNECTED</span>
+                    </div>
+                    <div className="border-b border-[#242522]/20 pb-1 flex flex-col">
+                      <span className="text-[#5C5E58] font-bold uppercase">TIMELINE EVENT</span>
+                      <span className="font-semibold text-[#8C8E88] uppercase">NOT CREATED</span>
+                    </div>
+                    <div className="border-b border-[#242522]/20 pb-1 flex flex-col">
+                      <span className="text-[#5C5E58] font-bold uppercase">REALTIME UPDATE</span>
+                      <span className="font-semibold text-[#8C8E88] uppercase">NOT SENT</span>
+                    </div>
+                    <div className="col-span-2 border-b border-[#242522]/20 pb-1 flex flex-col">
+                      <span className="text-[#5C5E58] font-bold uppercase">SERVER CONFIRMATION</span>
+                      <span className="font-semibold text-amber-500 uppercase">REQUIRED</span>
+                    </div>
+                  </div>
+                </section>
+              )}
+
+              {/* FUTURE STATUS EVENT */}
+              <section className="space-y-3 text-left">
+                <div className="flex items-center gap-2 border-b border-[#242522] pb-1.5">
+                  <span className="text-[#5C5E58] font-mono font-bold text-[8px] tracking-widest uppercase" style={{ fontFamily: 'var(--font-technical)' }}>
+                    FUTURE STATUS EVENT
+                  </span>
+                  <span className="text-[8px] font-mono font-bold text-amber-500 bg-amber-500/5 border border-amber-500/10 px-1.5 py-0.5 rounded-[1px]" style={{ fontFamily: 'var(--font-technical)' }}>
+                    SCHEMA PREVIEW ONLY
+                  </span>
+                </div>
+                <div className="grid grid-cols-2 gap-x-4 gap-y-2 text-[10px] font-mono" style={{ fontFamily: 'var(--font-technical)' }}>
+                  <div className="border-b border-[#242522]/20 pb-1 flex flex-col">
+                    <span className="text-[#5C5E58] font-bold uppercase">EVENT TYPE</span>
+                    <span className="font-semibold text-[#8C8E88] uppercase">STATUS_CHANGED</span>
+                  </div>
+                  <div className="border-b border-[#242522]/20 pb-1 flex flex-col">
+                    <span className="text-[#5C5E58] font-bold uppercase">PREVIOUS STATUS</span>
+                    <span className="font-semibold text-[#8C8E88] uppercase">REPORTED</span>
+                  </div>
+                  <div className="border-b border-[#242522]/20 pb-1 flex flex-col">
+                    <span className="text-[#5C5E58] font-bold uppercase">NEW STATUS</span>
+                    <span className="font-semibold text-[#8C8E88] uppercase">{targetStatus || 'SELECTED CANONICAL STATUS'}</span>
+                  </div>
+                  <div className="border-b border-[#242522]/20 pb-1 flex flex-col">
+                    <span className="text-[#5C5E58] font-bold uppercase">ACTOR</span>
+                    <span className="font-semibold text-[#8C8E88] uppercase">AUTHENTICATED INCIDENT MANAGER OR ADMIN</span>
+                  </div>
+                  <div className="col-span-2 border-b border-[#242522]/20 pb-1 flex flex-col">
+                    <span className="text-[#5C5E58] font-bold uppercase">REASON</span>
+                    <span className="font-semibold text-[#8C8E88] uppercase">
+                      {transitionContext.trim() ? 'OPERATOR-PROVIDED' : 'OPERATOR-PROVIDED WHEN AVAILABLE'}
+                    </span>
+                  </div>
+                  <div className="border-b border-[#242522]/20 pb-1 flex flex-col">
+                    <span className="text-[#5C5E58] font-bold uppercase">OCCURRED AT</span>
+                    <span className="font-semibold text-[#8C8E88] uppercase">SERVER GENERATED</span>
+                  </div>
+                  <div className="border-b border-[#242522]/20 pb-1 flex flex-col">
+                    <span className="text-[#5C5E58] font-bold uppercase">INCIDENT UPDATE</span>
+                    <span className="font-semibold text-[#8C8E88] uppercase font-bold">APPEND-ONLY</span>
+                  </div>
+                  <div className="border-b border-[#242522]/20 pb-1 flex flex-col">
+                    <span className="text-[#5C5E58] font-bold uppercase">PERSISTENCE</span>
+                    <span className="font-semibold text-[#8C8E88] uppercase">SERVER CONTROLLED</span>
+                  </div>
+                  <div className="border-b border-[#242522]/20 pb-1 flex flex-col">
+                    <span className="text-[#5C5E58] font-bold uppercase">REALTIME</span>
+                    <span className="font-semibold text-[#8C8E88] uppercase">INCIDENT SUBSCRIPTION</span>
+                  </div>
+                </div>
+              </section>
+
+              {/* REAL STATUS ACTION */}
+              <section className="space-y-2 text-left">
+                <button
+                  type="button"
+                  disabled
+                  aria-disabled="true"
+                  className="w-full py-2 bg-[#141513]/35 border border-[#242522] text-[#5C5E58] text-xs font-mono font-bold tracking-wider rounded-[1px] cursor-not-allowed opacity-50"
+                  style={{ fontFamily: 'var(--font-technical)' }}
+                >
+                  APPLY STATUS CHANGE
+                </button>
+                <div className="flex items-center gap-1.5 text-[9px] font-mono font-bold text-amber-500 bg-amber-500/5 border border-amber-500/10 px-2 py-0.5 rounded-[1px] w-fit" style={{ fontFamily: 'var(--font-technical)' }}>
+                  <span>BACKEND AUTHORITY REQUIRED</span>
+                </div>
+                <p className="text-[10px] text-[#8C8E88] font-sans leading-relaxed">
+                  The real transition will become available only after authenticated membership, Incident Manager or Admin authority, state-machine validation, and server confirmation are connected.
+                </p>
+              </section>
+
+              {/* RESET AND CLOSE */}
+              <div className="flex gap-2 pt-2 border-t border-[#242522]">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setTargetStatus('');
+                    setTransitionContext('');
+                    setIsStatusValidated(false);
+                    setIsStatusPreviewStale(false);
+                    setLastValidatedTargetStatus('');
+                    setLastValidatedContext('');
+                  }}
+                  className="flex-1 py-2 bg-[#141513] hover:bg-[#242522]/30 border border-[#242522] text-[#F3F1EA] hover:text-[#D6FF3F] text-xs font-mono font-bold tracking-wider rounded-[1px] cursor-pointer transition-colors"
+                  style={{ fontFamily: 'var(--font-technical)' }}
+                >
+                  RESET PREVIEW
+                </button>
+                <button
+                  type="button"
+                  onClick={closeStatusDrawer}
+                  className="flex-1 py-2 bg-[#141513] hover:bg-[#242522]/30 border border-[#242522] text-[#F3F1EA] hover:text-red-400 text-xs font-mono font-bold tracking-wider rounded-[1px] cursor-pointer transition-colors"
+                  style={{ fontFamily: 'var(--font-technical)' }}
+                >
+                  CLOSE REVIEW
+                </button>
+              </div>
+
+            </div>
+
+            {/* Footers - CONTRACT */}
+            <div className="border-t border-[#242522] bg-[#141513]/40 p-6 space-y-4 shrink-0 text-left">
+              <div>
+                <h3 className="text-[10px] font-mono font-bold text-[#F3F1EA] tracking-wider uppercase mb-1.5" style={{ fontFamily: 'var(--font-technical)' }}>
+                  STATUS TRANSITION CONTRACT
+                </h3>
+                <div className="grid grid-cols-2 gap-x-4 gap-y-2 text-[9px] font-mono text-[#8C8E88]" style={{ fontFamily: 'var(--font-technical)' }}>
+                  <div className="flex flex-col">
+                    <span className="text-[#5C5E58] font-bold uppercase">CURRENT STATE</span>
+                    <span className="font-semibold uppercase text-[#8C8E88]">SERVER SNAPSHOT REQUIRED</span>
+                  </div>
+                  <div className="flex flex-col">
+                    <span className="text-[#5C5E58] font-bold uppercase">TARGET STATE</span>
+                    <span className="font-semibold uppercase text-[#8C8E88]">CANONICAL STATE MACHINE</span>
+                  </div>
+                  <div className="flex flex-col">
+                    <span className="text-[#5C5E58] font-bold uppercase">ORGANIZATION ACCESS</span>
+                    <span className="font-semibold uppercase text-[#8C8E88]">ACTIVE MEMBERSHIP REQUIRED</span>
+                  </div>
+                  <div className="flex flex-col">
+                    <span className="text-[#5C5E58] font-bold uppercase">REQUIRED AUTHORITY</span>
+                    <span className="font-semibold uppercase text-[#8C8E88]">INCIDENT MANAGER OR ADMIN</span>
+                  </div>
+                  <div className="flex flex-col">
+                    <span className="text-[#5C5E58] font-bold uppercase">VALIDATION</span>
+                    <span className="font-semibold uppercase text-[#8C8E88]">SERVER ENFORCED</span>
+                  </div>
+                  <div className="flex flex-col">
+                    <span className="text-[#5C5E58] font-bold uppercase">TIMESTAMP</span>
+                    <span className="font-semibold uppercase text-[#8C8E88]">SERVER GENERATED</span>
+                  </div>
+                  <div className="flex flex-col">
+                    <span className="text-[#5C5E58] font-bold uppercase">TIMELINE EVENT</span>
+                    <span className="font-semibold uppercase text-[#8C8E88]">APPEND-ONLY</span>
+                  </div>
+                  <div className="flex flex-col">
+                    <span className="text-[#5C5E58] font-bold uppercase">CONFLICT RESPONSE</span>
+                    <span className="font-semibold uppercase text-[#8C8E88]">AUTHORITATIVE SERVER STATE</span>
+                  </div>
+                </div>
+              </div>
+
+              <div className="border border-[#242522] bg-[#0E0F0D] p-3 rounded-[1px] space-y-1.5">
+                <div className="text-[10px] font-mono font-bold text-amber-500 uppercase tracking-wide" style={{ fontFamily: 'var(--font-technical)' }}>
+                  A LOCAL TRANSITION PREVIEW IS NOT AN INCIDENT STATUS CHANGE.
+                </div>
+                <p className="text-[10px] text-[#8C8E88] font-sans leading-relaxed">
+                  The backend must verify membership, role authority, tenant access, the latest incident state, and transition preconditions before applying and broadcasting a status change.
+                </p>
+              </div>
+            </div>
+
+          </div>
+        </div>
+      )}
+
+      {/* Change Severity Drawer (Phase 03) */}
+      {isSeverityDrawerOpen && (
+        <div className="fixed inset-0 z-50 flex justify-end animate-fade-in">
+          {/* Overlay */}
+          <div 
+            onClick={closeSeverityDrawer}
+            className="fixed inset-0 bg-black/60 backdrop-blur-[1px] transition-opacity duration-200"
+            aria-hidden="true"
+          />
+          
+          {/* Drawer container */}
+          <div 
+            ref={severityDrawerRef}
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="change-incident-severity-title"
+            className="relative w-full min-[1000px]:w-[520px] h-full bg-[#0E0F0D] border-l border-[#242522] flex flex-col shadow-2xl z-10 rounded-none overflow-hidden text-left"
+          >
+            {/* Header */}
+            <div className="border-b border-[#242522] bg-[#141513]/30 px-6 py-4 flex items-center justify-between shrink-0">
+              <div className="text-left">
+                <h2 id="change-incident-severity-title" className="text-xs font-mono font-bold text-[#F3F1EA] tracking-wider uppercase" style={{ fontFamily: 'var(--font-technical)' }}>
+                  CONFIRM INCIDENT SEVERITY
+                </h2>
+                <span className="text-[9px] font-mono font-bold text-[#5C5E58] tracking-widest uppercase block mt-0.5" style={{ fontFamily: 'var(--font-technical)' }}>
+                  HUMAN DECISION / FRONTEND PREVIEW
+                </span>
+              </div>
+              <button
+                onClick={closeSeverityDrawer}
+                aria-label="Close severity decision review"
+                className="p-1.5 border border-[#242522] hover:bg-[#141513] text-[#8C8E88] hover:text-[#F3F1EA] rounded-[1px] transition-colors cursor-pointer"
+              >
+                <X className="w-3.5 h-3.5" aria-hidden="true" />
+              </button>
+            </div>
+
+            {/* Header Metadata */}
+            <div className="border-b border-[#242522] bg-[#141513]/10 px-6 py-3.5 grid grid-cols-2 gap-x-4 gap-y-2.5 text-[10px] font-mono shrink-0" style={{ fontFamily: 'var(--font-technical)' }}>
+              <div>
+                <span className="block text-[8px] text-[#5C5E58] font-bold uppercase">INCIDENT</span>
+                <span className="text-[#F3F1EA] font-semibold">SF-2026-0042</span>
+              </div>
+              <div>
+                <span className="block text-[8px] text-[#5C5E58] font-bold uppercase">CURRENT CONFIRMED SEVERITY</span>
+                <span className="text-[#8C8E88] font-semibold">NOT CONFIRMED</span>
+              </div>
+              <div>
+                <span className="block text-[8px] text-[#5C5E58] font-bold uppercase">AI SUGGESTION</span>
+                <span className="text-[#F3F1EA] font-semibold">SEV1</span>
+              </div>
+              <div>
+                <span className="block text-[8px] text-[#5C5E58] font-bold uppercase">DECISION STATE</span>
+                <span className={`font-semibold uppercase ${
+                  !isSeverityValidated ? 'text-[#8C8E88]' : isSeverityPreviewStale ? 'text-amber-500 animate-pulse' : 'text-[#D6FF3F]'
+                }`}>
+                  {!isSeverityValidated ? 'NOT CREATED' : isSeverityPreviewStale ? 'DRAFT CHANGED' : 'CURRENT LOCAL DRAFT'}
+                </span>
+              </div>
+              <div className="col-span-2">
+                <span className="block text-[8px] text-[#5C5E58] font-bold uppercase">PERSISTENCE</span>
+                <span className="text-[#8C8E88] font-semibold uppercase">NOT CONNECTED</span>
+              </div>
+            </div>
+
+            {/* Scrollable Content */}
+            <div className="flex-1 overflow-y-auto p-6 space-y-6">
+              
+              {/* SECTION 01 — CURRENT SEVERITY CONTEXT */}
+              <section className="space-y-3 text-left">
+                <div className="flex items-center gap-2 border-b border-[#242522] pb-1.5">
+                  <span className="text-[#5C5E58] font-mono font-bold text-[8px] tracking-widest uppercase" style={{ fontFamily: 'var(--font-technical)' }}>
+                    01 / CURRENT SEVERITY CONTEXT
+                  </span>
+                </div>
+                <div className="grid grid-cols-2 gap-x-4 gap-y-2 text-[10px] font-mono" style={{ fontFamily: 'var(--font-technical)' }}>
+                  <div className="border-b border-[#242522]/20 pb-1 flex flex-col">
+                    <span className="text-[#5C5E58] font-bold uppercase">INCIDENT</span>
+                    <span className="font-semibold text-[#8C8E88] uppercase">SF-2026-0042</span>
+                  </div>
+                  <div className="border-b border-[#242522]/20 pb-1 flex flex-col">
+                    <span className="text-[#5C5E58] font-bold uppercase">SERVICE</span>
+                    <span className="font-semibold text-[#8C8E88] uppercase">PAYMENTS API</span>
+                  </div>
+                  <div className="border-b border-[#242522]/20 pb-1 flex flex-col">
+                    <span className="text-[#5C5E58] font-bold uppercase">CURRENT CONFIRMED SEVERITY</span>
+                    <span className="font-semibold text-[#8C8E88] uppercase">NOT CONFIRMED</span>
+                  </div>
+                  <div className="border-b border-[#242522]/20 pb-1 flex flex-col">
+                    <span className="text-[#5C5E58] font-bold uppercase">AI SUGGESTED SEVERITY</span>
+                    <span className="font-semibold text-[#8C8E88] uppercase">SEV1</span>
+                  </div>
+                  <div className="border-b border-[#242522]/20 pb-1 flex flex-col">
+                    <span className="text-[#5C5E58] font-bold uppercase">AI OUTPUT STATE</span>
+                    <span className="font-semibold text-[#8C8E88] uppercase">DRAFT SUGGESTION</span>
+                  </div>
+                  <div className="border-b border-[#242522]/20 pb-1 flex flex-col">
+                    <span className="text-[#5C5E58] font-bold uppercase">AI AUTHORITY</span>
+                    <span className="font-semibold text-[#8C8E88] uppercase">HUMAN CONFIRMATION REQUIRED</span>
+                  </div>
+                  <div className="border-b border-[#242522]/20 pb-1 flex flex-col">
+                    <span className="text-[#5C5E58] font-bold uppercase">CURRENT STATUS</span>
+                    <span className="font-semibold text-[#8C8E88] uppercase">REPORTED</span>
+                  </div>
+                  <div className="border-b border-[#242522]/20 pb-1 flex flex-col">
+                    <span className="text-[#5C5E58] font-bold uppercase">COMMANDER</span>
+                    <span className="font-semibold text-[#8C8E88] uppercase">UNASSIGNED</span>
+                  </div>
+                </div>
+                <p className="text-[11px] text-[#8C8E88] font-sans leading-relaxed">
+                  DeepSeek has suggested SEV1 based on the available frontend incident evidence. This suggestion has not been accepted and cannot set the incident severity automatically.
+                </p>
+              </section>
+
+              {/* SECTION 02 — HUMAN SEVERITY SELECTION */}
+              <section className="space-y-3.5 text-left">
+                <div className="flex items-center gap-2 border-b border-[#242522] pb-1.5">
+                  <span className="text-[#5C5E58] font-mono font-bold text-[8px] tracking-widest uppercase" style={{ fontFamily: 'var(--font-technical)' }}>
+                    02 / SELECT SEVERITY
+                  </span>
+                </div>
+
+                <fieldset className="space-y-3">
+                  <legend className="text-[8px] text-[#5C5E58] font-bold uppercase tracking-widest mb-2" style={{ fontFamily: 'var(--font-technical)' }}>
+                    CONFIRMED SEVERITY DECISION
+                  </legend>
+                  
+                  <div className="space-y-2">
+                    {/* SEV1 */}
+                    <div className={`flex flex-col p-3 border rounded-[1px] transition-colors ${
+                      selectedSeverity === 'SEV1' 
+                        ? 'border-[#D6FF3F] bg-[#D6FF3F]/5' 
+                        : 'border-[#242522] bg-[#141513]/10 hover:bg-[#141513]/30'
+                    }`}>
+                      <div className="flex items-center justify-between">
+                        <label htmlFor="severity-radio-sev1" className="flex items-center gap-2 cursor-pointer">
+                          <input
+                            id="severity-radio-sev1"
+                            type="radio"
+                            name="severity-selection"
+                            value="SEV1"
+                            checked={selectedSeverity === 'SEV1'}
+                            onChange={() => {
+                              setSelectedSeverity('SEV1');
+                            }}
+                            className="accent-[#D6FF3F]"
+                          />
+                          <span className="text-xs font-mono font-bold text-[#F3F1EA]" style={{ fontFamily: 'var(--font-technical)' }}>SEV1</span>
+                          <span className="text-[9px] font-mono font-semibold text-[#8C8E88]" style={{ fontFamily: 'var(--font-technical)' }}>CRITICAL</span>
+                        </label>
+                        <span className="text-[8px] font-mono font-bold text-amber-500 border border-amber-500/20 bg-amber-500/5 px-1.5 py-0.5 rounded-[1px]" style={{ fontFamily: 'var(--font-technical)' }}>
+                          AI SUGGESTION
+                        </span>
+                      </div>
+                      <p className="text-[11px] text-[#8C8E88] font-sans mt-1.5 leading-relaxed pl-5">
+                        Broad outage, severe business impact, or payment, security, or safety-critical disruption.
+                      </p>
+                    </div>
+
+                    {/* SEV2 */}
+                    <div className={`flex flex-col p-3 border rounded-[1px] transition-colors ${
+                      selectedSeverity === 'SEV2' 
+                        ? 'border-[#D6FF3F] bg-[#D6FF3F]/5' 
+                        : 'border-[#242522] bg-[#141513]/10 hover:bg-[#141513]/30'
+                    }`}>
+                      <label htmlFor="severity-radio-sev2" className="flex items-center gap-2 cursor-pointer">
+                        <input
+                          id="severity-radio-sev2"
+                          type="radio"
+                          name="severity-selection"
+                          value="SEV2"
+                          checked={selectedSeverity === 'SEV2'}
+                          onChange={() => {
+                            setSelectedSeverity('SEV2');
+                          }}
+                          className="accent-[#D6FF3F]"
+                        />
+                        <span className="text-xs font-mono font-bold text-[#F3F1EA]" style={{ fontFamily: 'var(--font-technical)' }}>SEV2</span>
+                        <span className="text-[9px] font-mono font-semibold text-[#8C8E88]" style={{ fontFamily: 'var(--font-technical)' }}>MAJOR</span>
+                      </label>
+                      <p className="text-[11px] text-[#8C8E88] font-sans mt-1.5 leading-relaxed pl-5">
+                        Major degradation or a high-impact partial outage.
+                      </p>
+                    </div>
+
+                    {/* SEV3 */}
+                    <div className={`flex flex-col p-3 border rounded-[1px] transition-colors ${
+                      selectedSeverity === 'SEV3' 
+                        ? 'border-[#D6FF3F] bg-[#D6FF3F]/5' 
+                        : 'border-[#242522] bg-[#141513]/10 hover:bg-[#141513]/30'
+                    }`}>
+                      <label htmlFor="severity-radio-sev3" className="flex items-center gap-2 cursor-pointer">
+                        <input
+                          id="severity-radio-sev3"
+                          type="radio"
+                          name="severity-selection"
+                          value="SEV3"
+                          checked={selectedSeverity === 'SEV3'}
+                          onChange={() => {
+                            setSelectedSeverity('SEV3');
+                          }}
+                          className="accent-[#D6FF3F]"
+                        />
+                        <span className="text-xs font-mono font-bold text-[#F3F1EA]" style={{ fontFamily: 'var(--font-technical)' }}>SEV3</span>
+                        <span className="text-[9px] font-mono font-semibold text-[#8C8E88]" style={{ fontFamily: 'var(--font-technical)' }}>MODERATE</span>
+                      </label>
+                      <p className="text-[11px] text-[#8C8E88] font-sans mt-1.5 leading-relaxed pl-5">
+                        Limited impact with a workaround or a smaller affected group.
+                      </p>
+                    </div>
+
+                    {/* SEV4 */}
+                    <div className={`flex flex-col p-3 border rounded-[1px] transition-colors ${
+                      selectedSeverity === 'SEV4' 
+                        ? 'border-[#D6FF3F] bg-[#D6FF3F]/5' 
+                        : 'border-[#242522] bg-[#141513]/10 hover:bg-[#141513]/30'
+                    }`}>
+                      <label htmlFor="severity-radio-sev4" className="flex items-center gap-2 cursor-pointer">
+                        <input
+                          id="severity-radio-sev4"
+                          type="radio"
+                          name="severity-selection"
+                          value="SEV4"
+                          checked={selectedSeverity === 'SEV4'}
+                          onChange={() => {
+                            setSelectedSeverity('SEV4');
+                          }}
+                          className="accent-[#D6FF3F]"
+                        />
+                        <span className="text-xs font-mono font-bold text-[#F3F1EA]" style={{ fontFamily: 'var(--font-technical)' }}>SEV4</span>
+                        <span className="text-[9px] font-mono font-semibold text-[#8C8E88]" style={{ fontFamily: 'var(--font-technical)' }}>LOW</span>
+                      </label>
+                      <p className="text-[11px] text-[#8C8E88] font-sans mt-1.5 leading-relaxed pl-5">
+                        Minor, cosmetic, or low-urgency impact.
+                      </p>
+                    </div>
+                  </div>
+                </fieldset>
+              </section>
+
+              {/* SECTION 03 — DECISION RATIONALE */}
+              <section className="space-y-3.5 text-left">
+                <div className="flex items-center gap-2 border-b border-[#242522] pb-1.5">
+                  <span className="text-[#5C5E58] font-mono font-bold text-[8px] tracking-widest uppercase" style={{ fontFamily: 'var(--font-technical)' }}>
+                    03 / DECISION RATIONALE
+                  </span>
+                </div>
+
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <label htmlFor="severity-rationale-textarea" className="block text-[8px] text-[#5C5E58] font-bold uppercase tracking-widest" style={{ fontFamily: 'var(--font-technical)' }}>
+                      SEVERITY RATIONALE
+                    </label>
+                    <div className="text-[8px] font-mono font-bold flex gap-1.5" style={{ fontFamily: 'var(--font-technical)' }}>
+                      <span className="text-[#5C5E58]">RATIONALE STATE</span>
+                      <span className={severityRationale.trim() === '' ? 'text-[#8C8E88]' : 'text-amber-500'}>
+                        {severityRationale.trim() === '' ? 'EMPTY' : 'LOCAL CONTENT ENTERED'}
+                      </span>
+                    </div>
+                  </div>
+
+                  <textarea
+                    id="severity-rationale-textarea"
+                    rows={4}
+                    value={severityRationale}
+                    placeholder="Explain the observed impact and why the selected severity is appropriate."
+                    onChange={(e) => {
+                      setSeverityRationale(e.target.value);
+                    }}
+                    className="w-full bg-[#0E0F0D] border border-[#242522] p-3 text-xs text-[#F3F1EA] font-sans placeholder-[#5C5E58] focus:outline-none focus:border-[#D6FF3F]/60 rounded-[1px] leading-relaxed resize-none"
+                  />
+                  <p className="text-[10px] text-[#8C8E88] font-sans">
+                    Every severity confirmation or change requires a human-provided audit rationale.
+                  </p>
+                </div>
+              </section>
+
+              {/* SECTION 04 — AI INFLUENCE DECLARATION */}
+              <section className="space-y-3.5 text-left">
+                <div className="flex items-center gap-2 border-b border-[#242522] pb-1.5">
+                  <span className="text-[#5C5E58] font-mono font-bold text-[8px] tracking-widest uppercase" style={{ fontFamily: 'var(--font-technical)' }}>
+                    04 / AI INFLUENCE
+                  </span>
+                </div>
+
+                <div className="space-y-3 border border-[#242522] bg-[#141513]/10 p-4 rounded-[1px]">
+                  <label htmlFor="severity-checkbox-ai-influence" className="flex items-start gap-2.5 cursor-pointer select-none">
+                    <input
+                      id="severity-checkbox-ai-influence"
+                      type="checkbox"
+                      checked={isAiSuggestionInformed}
+                      onChange={(e) => {
+                        setIsAiSuggestionInformed(e.target.checked);
+                      }}
+                      className="accent-[#D6FF3F] mt-0.5"
+                    />
+                    <div className="flex-1">
+                      <span className="text-[10px] font-mono font-bold text-[#F3F1EA] uppercase tracking-wide block" style={{ fontFamily: 'var(--font-technical)' }}>
+                        AI SUGGESTION INFORMED THIS DECISION
+                      </span>
+                      <p className="text-[10px] text-[#8C8E88] font-sans mt-1 leading-relaxed">
+                        Select this only when the SEV1 recommendation or its supporting analysis materially influenced the human severity decision.
+                      </p>
+                    </div>
+                  </label>
+
+                  <div className="flex items-center justify-between text-[9px] font-mono text-[#5C5E58] pt-2 border-t border-[#242522]/40" style={{ fontFamily: 'var(--font-technical)' }}>
+                    <span>AI-ASSISTED FLAG</span>
+                    <span className={`font-bold ${isAiSuggestionInformed ? 'text-[#D6FF3F]' : 'text-[#8C8E88]'}`}>
+                      {isAiSuggestionInformed ? 'YES' : 'NO'}
+                    </span>
+                  </div>
+                </div>
+              </section>
+
+              {/* CURRENT OPERATOR CONTEXT */}
+              <section className="space-y-3 text-left">
+                <div className="flex items-center gap-2 border-b border-[#242522] pb-1.5">
+                  <span className="text-[#5C5E58] font-mono font-bold text-[8px] tracking-widest uppercase" style={{ fontFamily: 'var(--font-technical)' }}>
+                    CURRENT OPERATOR CONTEXT
+                  </span>
+                </div>
+                <div className="grid grid-cols-2 gap-x-4 gap-y-2 text-[10px] font-mono bg-[#141513]/10 border border-[#242522] p-3 rounded-[1px]" style={{ fontFamily: 'var(--font-technical)' }}>
+                  <div className="flex flex-col">
+                    <span className="text-[#5C5E58] font-bold">IDENTITY</span>
+                    <span className="text-[#8C8E88]">CURRENT OPERATOR</span>
+                  </div>
+                  <div className="flex flex-col">
+                    <span className="text-[#5C5E58] font-bold">IDENTITY SOURCE</span>
+                    <span className="text-[#8C8E88]">FRONTEND PREVIEW</span>
+                  </div>
+                  <div className="flex flex-col">
+                    <span className="text-[#5C5E58] font-bold">ORGANIZATION MEMBERSHIP</span>
+                    <span className="text-[#8C8E88]">NOT VERIFIED</span>
+                  </div>
+                  <div className="flex flex-col">
+                    <span className="text-[#5C5E58] font-bold">OPERATING ROLE</span>
+                    <span className="text-[#8C8E88]">NOT LOADED</span>
+                  </div>
+                  <div className="col-span-2 flex flex-col pt-1.5 border-t border-[#242522]/40 mt-1">
+                    <span className="text-[#5C5E58] font-bold">SEVERITY AUTHORITY</span>
+                    <span className="text-[#8C8E88]">NOT DETERMINED</span>
+                  </div>
+                </div>
+              </section>
+
+              {/* LOCAL VALIDATION ACTION & UNRESOLVED STATES */}
+              <section className="space-y-3.5 text-left pt-2 border-t border-[#242522]">
+                <div className="space-y-2">
+                  <button
+                    type="button"
+                    disabled={!selectedSeverity || severityRationale.trim() === ''}
+                    onClick={runValidation}
+                    className={`w-full py-2.5 text-xs font-mono font-bold tracking-wider rounded-[1px] border transition-colors flex items-center justify-center gap-2 ${
+                      (!selectedSeverity || severityRationale.trim() === '')
+                        ? 'bg-[#141513]/35 border-[#242522] text-[#5C5E58] cursor-not-allowed opacity-50'
+                        : 'bg-[#141513] border-[#242522] text-[#F3F1EA] hover:bg-[#D6FF3F]/10 hover:border-[#D6FF3F]/40 hover:text-[#D6FF3F] cursor-pointer'
+                    }`}
+                    style={{ fontFamily: 'var(--font-technical)' }}
+                  >
+                    VALIDATE SEVERITY DECISION
+                  </button>
+
+                  {/* Active Validation Warnings (Unresolved states) */}
+                  {(!selectedSeverity || severityRationale.trim() === '') && (
+                    <div className="space-y-1 p-2.5 border border-amber-500/10 bg-amber-500/5 rounded-[1px]">
+                      {!selectedSeverity && (
+                        <div className="text-[10px] font-mono font-bold text-amber-500 tracking-wider uppercase" style={{ fontFamily: 'var(--font-technical)' }}>
+                          SEVERITY SELECTION REQUIRED
+                        </div>
+                      )}
+                      {severityRationale.trim() === '' && (
+                        <div className="text-[10px] font-mono font-bold text-amber-500 tracking-wider uppercase" style={{ fontFamily: 'var(--font-technical)' }}>
+                          SEVERITY RATIONALE REQUIRED
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                  {/* Validation feedback when valid */}
+                  {isSeverityValidated && (
+                    <div className="p-3 border border-[#D6FF3F]/20 bg-[#D6FF3F]/5 rounded-[1px] space-y-2" aria-live="polite">
+                      <div className="flex flex-col gap-1">
+                        <div className="text-[10px] font-mono font-bold text-[#D6FF3F] tracking-wide" style={{ fontFamily: 'var(--font-technical)' }}>
+                          SEVERITY DECISION STRUCTURE VALID
+                        </div>
+                        <div className="text-[10px] font-mono font-bold text-amber-500 tracking-wide" style={{ fontFamily: 'var(--font-technical)' }}>
+                          AUTHORITY READINESS INCOMPLETE
+                        </div>
+                      </div>
+                      <p className="text-[10px] text-[#8C8E88] font-sans leading-relaxed">
+                        The human decision draft contains the required severity, rationale, and AI-influence declaration, but confirmation requires authenticated Incident Manager or Admin authority and server persistence.
+                      </p>
+                    </div>
+                  )}
+                </div>
+              </section>
+
+              {/* SECTION 05 — LOCAL SEVERITY PREVIEW */}
+              {isSeverityValidated && (
+                <section className={`space-y-3.5 text-left border border-[#242522] p-4 bg-[#141513]/10 rounded-[1px] transition-all relative ${
+                  isSeverityPreviewStale ? 'opacity-60 border-amber-500/30' : ''
+                }`} aria-live="polite">
+                  <div className="flex items-center justify-between border-b border-[#242522] pb-1.5">
+                    <span className="text-[#5C5E58] font-mono font-bold text-[8px] tracking-widest uppercase" style={{ fontFamily: 'var(--font-technical)' }}>
+                      05 / LOCAL SEVERITY DECISION PREVIEW
+                    </span>
+                    <span className={`text-[8px] font-mono font-bold px-1.5 py-0.5 rounded-[1px] uppercase ${
+                      isSeverityPreviewStale ? 'text-amber-500 border border-amber-500/20 bg-amber-500/5' : 'text-[#D6FF3F] border border-[#D6FF3F]/20 bg-[#D6FF3F]/5'
+                    }`} style={{ fontFamily: 'var(--font-technical)' }}>
+                      {isSeverityPreviewStale ? 'DRAFT CHANGED' : 'CURRENT LOCAL DRAFT'}
+                    </span>
+                  </div>
+
+                  {isSeverityPreviewStale && (
+                    <div className="text-[9px] font-mono font-bold text-amber-500 border border-amber-500/20 bg-amber-500/5 p-2 rounded-[1px] uppercase mb-2" style={{ fontFamily: 'var(--font-technical)' }}>
+                      DRAFT CHANGED - RE-VALIDATION REQUIRED
+                    </div>
+                  )}
+
+                  <div className="grid grid-cols-2 gap-x-4 gap-y-2 text-[10px] font-mono" style={{ fontFamily: 'var(--font-technical)' }}>
+                    <div className="col-span-2 border-b border-[#242522]/10 pb-1 flex flex-col">
+                      <span className="text-[#5C5E58] font-bold uppercase">LOCAL PREVIEW ONLY</span>
+                      <span className="font-semibold text-amber-500 uppercase">ACTIVE REVIEW STATE</span>
+                    </div>
+                    <div className="border-b border-[#242522]/10 pb-1 flex flex-col">
+                      <span className="text-[#5C5E58] font-bold">PREVIOUS CONFIRMED SEVERITY</span>
+                      <span className="text-[#8C8E88] uppercase">NOT CONFIRMED</span>
+                    </div>
+                    <div className="border-b border-[#242522]/10 pb-1 flex flex-col">
+                      <span className="text-[#5C5E58] font-bold">SELECTED SEVERITY</span>
+                      <span className="text-[#F3F1EA] uppercase font-bold">{lastValidatedSeverity}</span>
+                    </div>
+                    <div className="border-b border-[#242522]/10 pb-1 flex flex-col">
+                      <span className="text-[#5C5E58] font-bold">SEVERITY LABEL</span>
+                      <span className="text-[#F3F1EA] uppercase font-semibold">
+                        {lastValidatedSeverity === 'SEV1' ? 'CRITICAL' : lastValidatedSeverity === 'SEV2' ? 'MAJOR' : lastValidatedSeverity === 'SEV3' ? 'MODERATE' : lastValidatedSeverity === 'SEV4' ? 'LOW' : 'NOT SELECTED'}
+                      </span>
+                    </div>
+                    <div className="border-b border-[#242522]/10 pb-1 flex flex-col">
+                      <span className="text-[#5C5E58] font-bold">AI SUGGESTION</span>
+                      <span className="text-[#8C8E88] uppercase">SEV1</span>
+                    </div>
+                    <div className="border-b border-[#242522]/10 pb-1 flex flex-col">
+                      <span className="text-[#5C5E58] font-bold">AI-ASSISTED</span>
+                      <span className="text-[#8C8E88] uppercase">{lastValidatedAiSuggestionInformed ? 'YES' : 'NO'}</span>
+                    </div>
+                    <div className="border-b border-[#242522]/10 pb-1 flex flex-col">
+                      <span className="text-[#5C5E58] font-bold">ACTOR</span>
+                      <span className="text-[#8C8E88]">CURRENT OPERATOR / NOT VERIFIED</span>
+                    </div>
+                    <div className="border-b border-[#242522]/10 pb-1 flex flex-col">
+                      <span className="text-[#5C5E58] font-bold">ROLE AUTHORITY</span>
+                      <span className="text-[#8C8E88]">NOT DETERMINED</span>
+                    </div>
+                    <div className="border-b border-[#242522]/10 pb-1 flex flex-col">
+                      <span className="text-[#5C5E58] font-bold">TIMESTAMP</span>
+                      <span className="text-[#8C8E88]">NOT GENERATED</span>
+                    </div>
+                    <div className="border-b border-[#242522]/10 pb-1 flex flex-col">
+                      <span className="text-[#5C5E58] font-bold">PERSISTENCE</span>
+                      <span className="text-[#8C8E88] uppercase">NOT CONNECTED</span>
+                    </div>
+                    <div className="border-b border-[#242522]/10 pb-1 flex flex-col">
+                      <span className="text-[#5C5E58] font-bold">TIMELINE EVENT</span>
+                      <span className="text-[#8C8E88] uppercase">NOT CREATED</span>
+                    </div>
+                    <div className="border-b border-[#242522]/10 pb-1 flex flex-col">
+                      <span className="text-[#5C5E58] font-bold">REALTIME UPDATE</span>
+                      <span className="text-[#8C8E88] uppercase">NOT SENT</span>
+                    </div>
+                    <div className="col-span-2 border-b border-[#242522]/10 pb-1 flex flex-col">
+                      <span className="text-[#5C5E58] font-bold">SERVER CONFIRMATION</span>
+                      <span className="text-amber-500 uppercase font-bold">REQUIRED</span>
+                    </div>
+                    <div className="col-span-2 flex flex-col">
+                      <span className="text-[#5C5E58] font-bold">RATIONALE</span>
+                      <p className="text-[#F3F1EA] font-sans text-xs bg-[#0E0F0D] border border-[#242522] p-2 mt-1 leading-relaxed rounded-[1px] whitespace-pre-wrap">
+                        {lastValidatedRationale}
+                      </p>
+                    </div>
+                  </div>
+                </section>
+              )}
+
+              {/* FUTURE SEVERITY EVENT */}
+              <section className="space-y-3.5 text-left border border-[#242522] p-4 bg-[#141513]/5 rounded-[1px]">
+                <div className="flex items-center justify-between border-b border-[#242522] pb-1.5">
+                  <span className="text-[#5C5E58] font-mono font-bold text-[8px] tracking-widest uppercase" style={{ fontFamily: 'var(--font-technical)' }}>
+                    FUTURE SEVERITY EVENT
+                  </span>
+                  <span className="text-[8px] font-mono font-bold text-[#5C5E58]" style={{ fontFamily: 'var(--font-technical)' }}>
+                    SCHEMA PREVIEW ONLY
+                  </span>
+                </div>
+
+                <div className="grid grid-cols-2 gap-x-4 gap-y-2 text-[10px] font-mono" style={{ fontFamily: 'var(--font-technical)' }}>
+                  <div className="border-b border-[#242522]/10 pb-1 flex flex-col">
+                    <span className="text-[#5C5E58] font-bold">EVENT TYPE</span>
+                    <span className="text-[#8C8E88]">SEVERITY_CHANGED</span>
+                  </div>
+                  <div className="border-b border-[#242522]/10 pb-1 flex flex-col">
+                    <span className="text-[#5C5E58] font-bold">PREVIOUS SEVERITY</span>
+                    <span className="text-[#8C8E88]">CURRENT SERVER VALUE</span>
+                  </div>
+                  <div className="border-b border-[#242522]/10 pb-1 flex flex-col">
+                    <span className="text-[#5C5E58] font-bold">NEW SEVERITY</span>
+                    <span className="text-[#F3F1EA] font-semibold uppercase">{selectedSeverity || 'NOT SELECTED'}</span>
+                  </div>
+                  <div className="border-b border-[#242522]/10 pb-1 flex flex-col">
+                    <span className="text-[#5C5E58] font-bold">ACTOR</span>
+                    <span className="text-[#8C8E88]">AUTHENTICATED INCIDENT MANAGER OR ADMIN</span>
+                  </div>
+                  <div className="border-b border-[#242522]/10 pb-1 flex flex-col">
+                    <span className="text-[#5C5E58] font-bold">AI-ASSISTED</span>
+                    <span className="text-[#8C8E88] font-semibold">{isAiSuggestionInformed ? 'TRUE' : 'FALSE'}</span>
+                  </div>
+                  <div className="border-b border-[#242522]/10 pb-1 flex flex-col">
+                    <span className="text-[#5C5E58] font-bold">OCCURRED AT</span>
+                    <span className="text-[#8C8E88]">SERVER GENERATED</span>
+                  </div>
+                  <div className="border-b border-[#242522]/10 pb-1 flex flex-col">
+                    <span className="text-[#5C5E58] font-bold">INCIDENT UPDATE</span>
+                    <span className="text-[#8C8E88] font-bold">APPEND-ONLY</span>
+                  </div>
+                  <div className="border-b border-[#242522]/10 pb-1 flex flex-col">
+                    <span className="text-[#5C5E58] font-bold">PERSISTENCE</span>
+                    <span className="text-[#8C8E88]">SERVER CONTROLLED</span>
+                  </div>
+                  <div className="col-span-2 border-b border-[#242522]/10 pb-1 flex flex-col">
+                    <span className="text-[#5C5E58] font-bold">REALTIME</span>
+                    <span className="text-[#8C8E88]">INCIDENT SUBSCRIPTION</span>
+                  </div>
+                  <div className="col-span-2 flex flex-col">
+                    <span className="text-[#5C5E58] font-bold">REASON</span>
+                    <p className="text-[#F3F1EA] font-sans text-xs bg-[#0E0F0D] border border-[#242522] p-2 mt-1 leading-relaxed rounded-[1px] whitespace-pre-wrap">
+                      {severityRationale || 'NOT PROVIDED'}
+                    </p>
+                  </div>
+                </div>
+              </section>
+
+              {/* REAL SEVERITY ACTION */}
+              <section className="space-y-2 pt-2 border-t border-[#242522] text-left">
+                <button
+                  type="button"
+                  disabled
+                  aria-disabled="true"
+                  className="w-full py-2 bg-[#141513]/35 border border-[#242522] text-[#5C5E58] text-xs font-mono font-bold tracking-wider rounded-[1px] cursor-not-allowed opacity-50"
+                  style={{ fontFamily: 'var(--font-technical)' }}
+                >
+                  APPLY SEVERITY DECISION
+                </button>
+                <div className="flex items-center gap-1.5 text-[9px] font-mono font-bold text-amber-500 bg-amber-500/5 border border-amber-500/10 px-2 py-0.5 rounded-[1px] w-fit" style={{ fontFamily: 'var(--font-technical)' }}>
+                  <span>BACKEND AUTHORITY REQUIRED</span>
+                </div>
+                <p className="text-[10px] text-[#8C8E88] font-sans leading-relaxed">
+                  The real severity decision will become available after authenticated membership, Incident Manager or Admin authority, tenant access, server validation, and append-only audit insertion are connected.
+                </p>
+              </section>
+
+              {/* RESET AND CLOSE */}
+              <div className="flex gap-2 pt-2 border-t border-[#242522]">
+                <button
+                  type="button"
+                  onClick={resetSeverityDecision}
+                  className="flex-1 py-2 bg-[#141513] hover:bg-[#242522]/30 border border-[#242522] text-[#F3F1EA] hover:text-[#D6FF3F] text-xs font-mono font-bold tracking-wider rounded-[1px] cursor-pointer transition-colors"
+                  style={{ fontFamily: 'var(--font-technical)' }}
+                >
+                  RESET DECISION
+                </button>
+                <button
+                  type="button"
+                  onClick={closeSeverityDrawer}
+                  className="flex-1 py-2 bg-[#141513] hover:bg-[#242522]/30 border border-[#242522] text-[#F3F1EA] hover:text-red-400 text-xs font-mono font-bold tracking-wider rounded-[1px] cursor-pointer transition-colors"
+                  style={{ fontFamily: 'var(--font-technical)' }}
+                >
+                  CLOSE REVIEW
+                </button>
+              </div>
+
+              {/* Footers - CONTRACT */}
+              <div className="border-t border-[#242522] bg-[#141513]/40 p-4 space-y-4 rounded-[1px] text-left">
+                <div>
+                  <h3 className="text-[10px] font-mono font-bold text-[#F3F1EA] tracking-wider uppercase mb-1.5" style={{ fontFamily: 'var(--font-technical)' }}>
+                    SEVERITY DECISION CONTRACT
+                  </h3>
+                  <div className="grid grid-cols-2 gap-x-4 gap-y-2 text-[9px] font-mono text-[#8C8E88]" style={{ fontFamily: 'var(--font-technical)' }}>
+                    <div className="flex flex-col">
+                      <span className="text-[#5C5E58] font-bold uppercase">CURRENT SEVERITY</span>
+                      <span className="font-semibold uppercase text-[#8C8E88]">AUTHORITATIVE SERVER SNAPSHOT</span>
+                    </div>
+                    <div className="flex flex-col">
+                      <span className="text-[#5C5E58] font-bold uppercase">NEW SEVERITY</span>
+                      <span className="font-semibold uppercase text-[#8C8E88]">CANONICAL SEV1–SEV4</span>
+                    </div>
+                    <div className="flex flex-col">
+                      <span className="text-[#5C5E58] font-bold uppercase">RATIONALE</span>
+                      <span className="font-semibold uppercase text-[#8C8E88]">REQUIRED HUMAN INPUT</span>
+                    </div>
+                    <div className="flex flex-col">
+                      <span className="text-[#5C5E58] font-bold uppercase">AI INFLUENCE</span>
+                      <span className="font-semibold uppercase text-[#8C8E88]">EXPLICIT AUDIT FLAG</span>
+                    </div>
+                    <div className="flex flex-col">
+                      <span className="text-[#5C5E58] font-bold uppercase">ORGANIZATION ACCESS</span>
+                      <span className="font-semibold uppercase text-[#8C8E88]">ACTIVE MEMBERSHIP REQUIRED</span>
+                    </div>
+                    <div className="flex flex-col">
+                      <span className="text-[#5C5E58] font-bold uppercase">REQUIRED AUTHORITY</span>
+                      <span className="font-semibold uppercase text-[#8C8E88]">INCIDENT MANAGER OR ADMIN</span>
+                    </div>
+                    <div className="flex flex-col">
+                      <span className="text-[#5C5E58] font-bold uppercase">TIMESTAMP</span>
+                      <span className="font-semibold uppercase text-[#8C8E88]">SERVER GENERATED</span>
+                    </div>
+                    <div className="flex flex-col">
+                      <span className="text-[#5C5E58] font-bold uppercase">TIMELINE EVENT</span>
+                      <span className="font-semibold uppercase text-[#8C8E88]">APPEND-ONLY</span>
+                    </div>
+                    <div className="col-span-2 flex flex-col border-t border-[#242522]/20 pt-1">
+                      <span className="text-[#5C5E58] font-bold uppercase">CONFLICT RESPONSE</span>
+                      <span className="font-semibold uppercase text-[#8C8E88]">AUTHORITATIVE SERVER STATE</span>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="border border-[#242522] bg-[#0E0F0D] p-3 rounded-[1px] space-y-1.5">
+                  <div className="text-[10px] font-mono font-bold text-amber-500 uppercase tracking-wide" style={{ fontFamily: 'var(--font-technical)' }}>
+                    AN AI SEVERITY SUGGESTION IS NOT A HUMAN SEVERITY DECISION.
+                  </div>
+                  <p className="text-[10px] text-[#8C8E88] font-sans leading-relaxed">
+                    The backend must verify membership, role authority, tenant access, current incident data, and the complete audit payload before accepting and broadcasting a severity confirmation or change.
+                  </p>
+                </div>
+              </div>
+
+            </div>
+
+          </div>
+        </div>
+      )}
+
+      {/* Add Incident Note Drawer */}
+      {isNoteDrawerOpen && (
+        <div className="fixed inset-0 z-50 flex justify-end">
+          {/* Overlay */}
+          <div 
+            onClick={closeNoteDrawer}
+            className="fixed inset-0 bg-black/60 backdrop-blur-[1px] transition-opacity duration-200"
+            aria-hidden="true"
+          />
+          
+          {/* Drawer container */}
+          <div 
+            ref={noteDrawerRef}
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="add-incident-note-title"
+            className="relative w-full min-[1000px]:w-[520px] h-full bg-[#0E0F0D] border-l border-[#242522] flex flex-col shadow-2xl z-10 rounded-none overflow-hidden text-left"
+          >
+            {/* Header */}
+            <div className="border-b border-[#242522] bg-[#141513]/30 px-6 py-4 flex items-center justify-between shrink-0">
+              <div className="text-left">
+                <h2 id="add-incident-note-title" className="text-xs font-mono font-bold text-[#F3F1EA] tracking-wider uppercase" style={{ fontFamily: 'var(--font-technical)' }}>
+                  ADD INCIDENT NOTE
+                </h2>
+                <span className="text-[9px] font-mono font-bold text-[#5C5E58] tracking-widest uppercase block mt-0.5" style={{ fontFamily: 'var(--font-technical)' }}>
+                  OPERATIONAL NOTE / FRONTEND DRAFT
+                </span>
+              </div>
+              <button
+                onClick={closeNoteDrawer}
+                aria-label="Close incident note composer"
+                className="p-1.5 border border-[#242522] hover:bg-[#141513] text-[#8C8E88] hover:text-[#F3F1EA] rounded-[1px] transition-colors cursor-pointer"
+              >
+                <X className="w-3.5 h-3.5" />
+              </button>
+            </div>
+
+            {/* Header metadata */}
+            <div className="border-b border-[#242522] bg-[#141513]/10 px-6 py-3.5 grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-2.5 text-[10px] font-mono shrink-0" style={{ fontFamily: 'var(--font-technical)' }}>
+              <div>
+                <span className="block text-[8px] text-[#5C5E58] font-bold uppercase">INCIDENT</span>
+                <span className="text-[#F3F1EA] font-semibold">SF-2026-0042</span>
+              </div>
+              <div>
+                <span className="block text-[8px] text-[#5C5E58] font-bold uppercase">CURRENT STATUS</span>
+                <span className="text-[#8C8E88] font-semibold">REPORTED</span>
+              </div>
+              <div>
+                <span className="block text-[8px] text-[#5C5E58] font-bold uppercase">PERSISTENCE</span>
+                <span className="text-[#8C8E88] font-semibold uppercase">NOT CONNECTED</span>
+              </div>
+              <div>
+                <span className="block text-[8px] text-[#5C5E58] font-bold uppercase">NOTE STATE</span>
+                <span className={`font-semibold uppercase ${previewContent !== null ? 'text-amber-500' : 'text-[#8C8E88]'}`}>
+                  {previewContent !== null ? 'LOCAL PREVIEW READY' : 'DRAFT NOT CREATED'}
+                </span>
+              </div>
+            </div>
+
+            {/* Scrollable content area */}
+            <div className="flex-1 overflow-y-auto p-6 space-y-6">
+              
+              {/* SECTION 01 — INCIDENT CONTEXT */}
+              <section className="space-y-3 text-left">
+                <div className="flex items-center gap-2 border-b border-[#242522] pb-1.5">
+                  <span className="text-[#5C5E58] font-mono font-bold text-[8px] tracking-widest uppercase" style={{ fontFamily: 'var(--font-technical)' }}>
+                    01 / INCIDENT CONTEXT
+                  </span>
+                </div>
+                
+                <div className="grid grid-cols-1 gap-2.5 text-[10px] font-mono" style={{ fontFamily: 'var(--font-technical)' }}>
+                  <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between border-b border-[#242522]/20 pb-1.5 gap-1">
+                    <span className="text-[#5C5E58] font-bold uppercase">INCIDENT</span>
+                    <span className="font-semibold text-[#8C8E88] uppercase">SF-2026-0042</span>
+                  </div>
+                  <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between border-b border-[#242522]/20 pb-1.5 gap-1">
+                    <span className="text-[#5C5E58] font-bold uppercase">SERVICE</span>
+                    <span className="font-semibold text-[#8C8E88] uppercase">PAYMENTS API</span>
+                  </div>
+                  <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between border-b border-[#242522]/20 pb-1.5 gap-1">
+                    <span className="text-[#5C5E58] font-bold uppercase">STATUS</span>
+                    <span className="font-semibold text-[#8C8E88] uppercase">REPORTED</span>
+                  </div>
+                  <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between border-b border-[#242522]/20 pb-1.5 gap-1">
+                    <span className="text-[#5C5E58] font-bold uppercase">CONFIRMED SEVERITY</span>
+                    <span className="font-semibold text-[#8C8E88] uppercase">NOT CONFIRMED</span>
+                  </div>
+                  <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between border-b border-[#242522]/20 pb-1.5 gap-1">
+                    <span className="text-[#5C5E58] font-bold uppercase">COMMANDER</span>
+                    <span className="font-semibold text-[#8C8E88] uppercase">UNASSIGNED</span>
+                  </div>
+                  <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between border-b border-[#242522]/20 pb-1.5 gap-1">
+                    <span className="text-[#5C5E58] font-bold uppercase">TIMELINE STATE</span>
+                    <span className="font-semibold text-[#8C8E88] uppercase">4 MOCK EVENTS / FRONTEND SEQUENCE</span>
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <p className="text-[10px] text-[#A8AAA3] leading-relaxed font-sans font-normal">
+                    The note draft is being prepared against the current frontend incident context. No incident field or Timeline record will change during this preview.
+                  </p>
+                  <p className="text-[10px] text-[#5C5E58] leading-relaxed font-sans font-normal">
+                    Do not invent timestamps, actors, IDs, or membership records.
+                  </p>
+                </div>
+              </section>
+
+              {/* SECTION 02 — NOTE COMPOSER */}
+              <section className="space-y-3 text-left">
+                <div className="flex items-center gap-2 border-b border-[#242522] pb-1.5">
+                  <span className="text-[#5C5E58] font-mono font-bold text-[8px] tracking-widest uppercase" style={{ fontFamily: 'var(--font-technical)' }}>
+                    02 / OPERATIONAL NOTE
+                  </span>
+                </div>
+
+                <div className="space-y-2">
+                  <label htmlFor="note-composer-textarea" className="block text-[10px] font-mono font-bold text-[#5C5E58] uppercase" style={{ fontFamily: 'var(--font-technical)' }}>
+                    NOTE CONTENT <span className="text-amber-500">*</span>
+                  </label>
+                  <textarea
+                    id="note-composer-textarea"
+                    required
+                    rows={6}
+                    value={noteContent}
+                    onChange={(e) => {
+                      const val = e.target.value;
+                      setNoteContent(val);
+                      if (noteError) {
+                        if (val.trim() !== '') {
+                          setNoteError(null);
+                        }
+                      }
+                    }}
+                    onBlur={() => {
+                      if (noteContent.trim() === '') {
+                        setNoteError('NOTE CONTENT REQUIRED');
+                      } else {
+                        setNoteError(null);
+                      }
+                    }}
+                    placeholder="Document an observation, investigation result, decision, handoff, or operational update."
+                    className="w-full min-h-[160px] sm:min-h-[160px] min-h-[140px] p-3 text-[11px] font-sans text-[#F3F1EA] bg-[#141513]/40 border border-[#242522] hover:border-[#383A34] focus:border-[#D6FF3F]/40 focus:outline-none rounded-[1px] transition-colors resize-y leading-relaxed"
+                    aria-invalid={noteError ? "true" : "false"}
+                    aria-describedby="note-composer-error note-composer-helper"
+                  />
+                  
+                  {noteError && (
+                    <div 
+                      id="note-composer-error" 
+                      role="alert" 
+                      className="text-[10px] font-mono text-amber-500 font-bold"
+                      style={{ fontFamily: 'var(--font-technical)' }}
+                    >
+                      {noteError}
+                    </div>
+                  )}
+
+                  <div id="note-composer-helper" className="space-y-2">
+                    <p className="text-[10px] text-[#A8AAA3] leading-relaxed font-sans font-normal">
+                      Write a factual operational update. This frontend draft does not modify the incident or its Timeline.
+                    </p>
+                  </div>
+
+                  {/* Live draft state */}
+                  <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between border-t border-[#242522]/20 pt-2 text-[10px] font-mono" style={{ fontFamily: 'var(--font-technical)' }}>
+                    <span className="text-[#5C5E58] font-bold uppercase">DRAFT STATE</span>
+                    <span className={`font-semibold ${noteContent.trim() === '' ? 'text-[#8C8E88]' : 'text-amber-500'}`}>
+                      {noteContent.trim() === '' ? 'EMPTY' : 'LOCAL CONTENT ENTERED'}
+                    </span>
+                  </div>
+
+                  {/* Preview state if previewed */}
+                  {previewContent !== null && (
+                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between border-t border-[#242522]/20 pt-2 text-[10px] font-mono" style={{ fontFamily: 'var(--font-technical)' }}>
+                      <span className="text-[#5C5E58] font-bold uppercase">PREVIEW STATE</span>
+                      <span className={`font-semibold ${noteContent !== previewContent ? 'text-amber-500 animate-pulse' : 'text-[#8C8E88]'}`}>
+                        {noteContent !== previewContent ? 'DRAFT CHANGED' : 'CURRENT LOCAL DRAFT'}
+                      </span>
+                    </div>
+                  )}
+                </div>
+
+                {/* Preview note action button */}
+                <div className="pt-2">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (noteContent.trim() === '') {
+                        setNoteError('NOTE CONTENT REQUIRED');
+                      } else {
+                        setNoteError(null);
+                        setPreviewContent(noteContent);
+                      }
+                    }}
+                    disabled={noteContent.trim() === ''}
+                    className={`w-full py-2 px-4 border text-[10px] font-mono font-bold rounded-[1px] uppercase text-center transition-colors ${
+                      noteContent.trim() === ''
+                        ? 'border-[#242522] bg-[#141513]/10 text-[#5C5E58] cursor-not-allowed opacity-50'
+                        : 'border-[#242522] bg-[#141513] hover:bg-[#D6FF3F]/10 hover:border-[#D6FF3F]/40 text-[#F3F1EA] cursor-pointer'
+                    }`}
+                    style={{ fontFamily: 'var(--font-technical)' }}
+                  >
+                    PREVIEW NOTE
+                  </button>
+                </div>
+              </section>
+
+              {/* CURRENT OPERATOR CONTEXT */}
+              <section className="space-y-3 pt-4 border-t border-[#242522]/40 text-left">
+                <div className="flex items-center gap-2 pb-1">
+                  <span className="text-[#5C5E58] font-mono font-bold text-[8px] tracking-widest uppercase" style={{ fontFamily: 'var(--font-technical)' }}>
+                    CURRENT OPERATOR CONTEXT
+                  </span>
+                </div>
+
+                <div className="grid grid-cols-1 gap-2.5 text-[10px] font-mono" style={{ fontFamily: 'var(--font-technical)' }}>
+                  <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between border-b border-[#242522]/20 pb-1.5 gap-1">
+                    <span className="text-[#5C5E58] font-bold uppercase">IDENTITY</span>
+                    <span className="font-semibold text-[#8C8E88] uppercase">CURRENT OPERATOR</span>
+                  </div>
+                  <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between border-b border-[#242522]/20 pb-1.5 gap-1">
+                    <span className="text-[#5C5E58] font-bold uppercase">IDENTITY SOURCE</span>
+                    <span className="font-semibold text-[#8C8E88] uppercase">FRONTEND PREVIEW</span>
+                  </div>
+                  <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between border-b border-[#242522]/20 pb-1.5 gap-1">
+                    <span className="text-[#5C5E58] font-bold uppercase">ORGANIZATION MEMBERSHIP</span>
+                    <span className="font-semibold text-amber-500 uppercase">NOT VERIFIED</span>
+                  </div>
+                  <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between border-b border-[#242522]/20 pb-1.5 gap-1">
+                    <span className="text-[#5C5E58] font-bold uppercase">OPERATING ROLE</span>
+                    <span className="font-semibold text-[#8C8E88] uppercase">NOT LOADED</span>
+                  </div>
+                  <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between border-b border-[#242522]/20 pb-1.5 gap-1">
+                    <span className="text-[#5C5E58] font-bold uppercase">NOTE AUTHORITY</span>
+                    <span className="font-semibold text-amber-500 uppercase">NOT DETERMINED</span>
+                  </div>
+                </div>
+              </section>
+
+              {/* SECTION 03 — LOCAL NOTE PREVIEW */}
+              {previewContent !== null && (
+                <section className="space-y-3 pt-4 border-t border-[#242522]/40 text-left">
+                  <div className="flex items-center gap-2 border-b border-[#242522] pb-1.5">
+                    <span className="text-[#5C5E58] font-mono font-bold text-[8px] tracking-widest uppercase" style={{ fontFamily: 'var(--font-technical)' }}>
+                      03 / LOCAL NOTE PREVIEW
+                    </span>
+                  </div>
+
+                  {/* Live tag/badge state */}
+                  <div className="flex items-center justify-between">
+                    <span className="inline-flex items-center text-[9px] font-mono font-bold text-amber-500 border border-amber-500/20 bg-amber-500/5 px-2 py-0.5 rounded-[1px]" style={{ fontFamily: 'var(--font-technical)' }}>
+                      LOCAL PREVIEW ONLY
+                    </span>
+                    <span className="text-[9px] font-mono text-[#5C5E58]" style={{ fontFamily: 'var(--font-technical)' }}>
+                      {noteContent !== previewContent ? 'DRAFT CHANGED' : 'CURRENT LOCAL DRAFT'}
+                    </span>
+                  </div>
+
+                  {/* Preview Card */}
+                  <div className={`p-4 bg-[#141513]/20 border border-[#242522] rounded-[1px] space-y-3 text-left transition-all ${noteContent !== previewContent ? 'opacity-60 border-dashed border-amber-500/30' : ''}`}>
+                    <div className="grid grid-cols-1 gap-2 text-[9px] font-mono" style={{ fontFamily: 'var(--font-technical)' }}>
+                      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between border-b border-[#242522]/10 pb-1 gap-1">
+                        <span className="text-[#5C5E58] font-bold uppercase">EVENT CATEGORY</span>
+                        <span className="font-semibold text-amber-500 uppercase">NOTE</span>
+                      </div>
+                      
+                      <div className="flex flex-col border-b border-[#242522]/10 pb-2.5 pt-1">
+                        <span className="text-[#5C5E58] font-bold uppercase mb-1">CONTENT</span>
+                        <p className="text-[11px] font-sans font-normal text-[#F3F1EA] leading-relaxed whitespace-pre-wrap select-all">
+                          {previewContent}
+                        </p>
+                      </div>
+
+                      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between border-b border-[#242522]/10 pb-1 gap-1">
+                        <span className="text-[#5C5E58] font-bold uppercase">SOURCE</span>
+                        <span className="font-semibold text-amber-500 uppercase">HUMAN DRAFT / FRONTEND PREVIEW</span>
+                      </div>
+                      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between border-b border-[#242522]/10 pb-1 gap-1">
+                        <span className="text-[#5C5E58] font-bold uppercase">AUTHOR</span>
+                        <span className="font-semibold text-[#8C8E88] uppercase">CURRENT OPERATOR / NOT VERIFIED</span>
+                      </div>
+                      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between border-b border-[#242522]/10 pb-1 gap-1">
+                        <span className="text-[#5C5E58] font-bold uppercase">TIMESTAMP</span>
+                        <span className="font-semibold text-[#5C5E58] uppercase">NOT GENERATED</span>
+                      </div>
+                      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between border-b border-[#242522]/10 pb-1 gap-1">
+                        <span className="text-[#5C5E58] font-bold uppercase">PERSISTENCE</span>
+                        <span className="font-semibold text-[#5C5E58] uppercase">NOT CONNECTED</span>
+                      </div>
+                      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between border-b border-[#242522]/10 pb-1 gap-1">
+                        <span className="text-[#5C5E58] font-bold uppercase">TIMELINE INSERTION</span>
+                        <span className="font-semibold text-[#5C5E58] uppercase">NOT CREATED</span>
+                      </div>
+                      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between pb-0.5 gap-1">
+                        <span className="text-[#5C5E58] font-bold uppercase">AUTHORITY</span>
+                        <span className="font-semibold text-amber-500 uppercase">BACKEND REQUIRED</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <p className="text-[10px] text-[#A8AAA3] leading-relaxed font-sans font-normal text-left">
+                    This preview represents how the operational note may appear after authenticated authority, server persistence, and append-only Timeline insertion are connected.
+                  </p>
+                </section>
+              )}
+
+              {/* FUTURE NOTE EVENT */}
+              <section className="space-y-3 pt-4 border-t border-[#242522]/40 text-left">
+                <div className="flex items-center justify-between border-b border-[#242522] pb-1.5">
+                  <span className="text-[#5C5E58] font-mono font-bold text-[8px] tracking-widest uppercase" style={{ fontFamily: 'var(--font-technical)' }}>
+                    FUTURE NOTE EVENT
+                  </span>
+                  <span className="text-[8px] font-mono text-amber-500 font-bold animate-pulse" style={{ fontFamily: 'var(--font-technical)' }}>
+                    SCHEMA PREVIEW ONLY
+                  </span>
+                </div>
+
+                <div className="grid grid-cols-1 gap-2.5 text-[10px] font-mono" style={{ fontFamily: 'var(--font-technical)' }}>
+                  <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between border-b border-[#242522]/20 pb-1.5 gap-1">
+                    <span className="text-[#5C5E58] font-bold uppercase">EVENT CATEGORY</span>
+                    <span className="font-semibold text-[#8C8E88] uppercase">NOTE</span>
+                  </div>
+                  <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between border-b border-[#242522]/20 pb-1.5 gap-1">
+                    <span className="text-[#5C5E58] font-bold uppercase">CONTENT</span>
+                    <span className="font-semibold text-[#8C8E88] uppercase">OPERATOR-PROVIDED TEXT</span>
+                  </div>
+                  <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between border-b border-[#242522]/20 pb-1.5 gap-1">
+                    <span className="text-[#5C5E58] font-bold uppercase">AUTHOR</span>
+                    <span className="font-semibold text-[#8C8E88] uppercase">AUTHENTICATED ACTIVE MEMBER</span>
+                  </div>
+                  <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between border-b border-[#242522]/20 pb-1.5 gap-1">
+                    <span className="text-[#5C5E58] font-bold uppercase">INCIDENT</span>
+                    <span className="font-semibold text-[#8C8E88] uppercase">SERVER-VERIFIED INCIDENT RECORD</span>
+                  </div>
+                  <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between border-b border-[#242522]/20 pb-1.5 gap-1">
+                    <span className="text-[#5C5E58] font-bold uppercase">TIMESTAMP</span>
+                    <span className="font-semibold text-[#8C8E88] uppercase">SERVER GENERATED</span>
+                  </div>
+                  <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between border-b border-[#242522]/20 pb-1.5 gap-1">
+                    <span className="text-[#5C5E58] font-bold uppercase">PERSISTENCE</span>
+                    <span className="font-semibold text-[#8C8E88] uppercase">SERVER CONTROLLED</span>
+                  </div>
+                  <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between border-b border-[#242522]/20 pb-1.5 gap-1">
+                    <span className="text-[#5C5E58] font-bold uppercase">TIMELINE</span>
+                    <span className="font-semibold text-[#8C8E88] uppercase">APPEND-ONLY INSERTION</span>
+                  </div>
+                  <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between border-b border-[#242522]/20 pb-1.5 gap-1">
+                    <span className="text-[#5C5E58] font-bold uppercase">REALTIME</span>
+                    <span className="font-semibold text-[#8C8E88] uppercase">INCIDENT SUBSCRIPTION</span>
+                  </div>
+                  <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between pb-0.5 gap-1">
+                    <span className="text-[#5C5E58] font-bold uppercase">AUDIT AUTHORITY</span>
+                    <span className="font-semibold text-[#8C8E88] uppercase">BACKEND REQUIRED</span>
+                  </div>
+                </div>
+              </section>
+
+              {/* NOTE AUTHORITY CONTRACT */}
+              <section className="space-y-3 pt-4 border-t border-[#242522]/40 text-left">
+                <div className="flex items-center gap-2 pb-1">
+                  <span className="text-[#5C5E58] font-mono font-bold text-[8px] tracking-widest uppercase" style={{ fontFamily: 'var(--font-technical)' }}>
+                    NOTE AUTHORITY CONTRACT
+                  </span>
+                </div>
+
+                <div className="grid grid-cols-2 gap-x-4 gap-y-2 text-[9px] font-mono text-[#5C5E58]" style={{ fontFamily: 'var(--font-technical)' }}>
+                  <div>
+                    <span className="block text-[8px] text-[#5C5E58] font-bold uppercase">ORGANIZATION ACCESS</span>
+                    <span className="text-[#8C8E88] font-semibold uppercase">ACTIVE MEMBERSHIP REQUIRED</span>
+                  </div>
+                  <div>
+                    <span className="block text-[8px] text-[#5C5E58] font-bold uppercase">INCIDENT ACCESS</span>
+                    <span className="text-[#8C8E88] font-semibold uppercase">SERVER VERIFIED</span>
+                  </div>
+                  <div>
+                    <span className="block text-[8px] text-[#5C5E58] font-bold uppercase">AUTHOR IDENTITY</span>
+                    <span className="text-[#8C8E88] font-semibold uppercase">AUTHENTICATED MEMBER</span>
+                  </div>
+                  <div>
+                    <span className="block text-[8px] text-[#5C5E58] font-bold uppercase">CONTENT</span>
+                    <span className="text-[#8C8E88] font-semibold uppercase">OPERATOR PROVIDED</span>
+                  </div>
+                  <div>
+                    <span className="block text-[8px] text-[#5C5E58] font-bold uppercase">TIMESTAMP</span>
+                    <span className="text-[#8C8E88] font-semibold uppercase">SERVER GENERATED</span>
+                  </div>
+                  <div>
+                    <span className="block text-[8px] text-[#5C5E58] font-bold uppercase">TIMELINE ORDER</span>
+                    <span className="text-[#8C8E88] font-semibold uppercase">SERVER CONTROLLED</span>
+                  </div>
+                  <div className="col-span-2">
+                    <span className="block text-[8px] text-[#5C5E58] font-bold uppercase">AUDIT EVENT</span>
+                    <span className="text-[#8C8E88] font-semibold uppercase">APPEND-ONLY</span>
+                  </div>
+                </div>
+
+                <div className="p-3 bg-amber-500/5 border border-amber-500/10 rounded-[1px] space-y-1 text-left">
+                  <div className="text-[9px] font-mono font-bold text-amber-500 uppercase" style={{ fontFamily: 'var(--font-technical)' }}>
+                    A LOCAL DRAFT IS NOT AN INCIDENT RECORD.
+                  </div>
+                  <p className="text-[10px] text-[#A8AAA3] leading-relaxed font-sans font-normal">
+                    The backend must verify organization membership, incident access, author identity, and the latest incident state before accepting and broadcasting an operational note.
+                  </p>
+                </div>
+              </section>
+
+            </div>
+
+            {/* Drawer footer actions */}
+            <div className="border-t border-[#242522] bg-[#141513]/30 p-6 space-y-4 shrink-0 pb-10 sm:pb-6">
+              <div className="space-y-2">
+                <button
+                  type="button"
+                  disabled
+                  aria-disabled="true"
+                  className="w-full py-2.5 px-4 border border-[#242522] bg-[#141513]/10 text-[10px] font-mono font-bold text-[#5C5E58] rounded-[1px] cursor-not-allowed uppercase text-center"
+                  style={{ fontFamily: 'var(--font-technical)' }}
+                >
+                  ADD NOTE TO INCIDENT
+                </button>
+                <div className="flex items-center justify-between text-[8px] font-mono text-[#5C5E58]" style={{ fontFamily: 'var(--font-technical)' }}>
+                  <span>STATUS</span>
+                  <span className="text-amber-500 font-bold uppercase">BACKEND AUTHORITY REQUIRED</span>
+                </div>
+                <p className="text-[10px] text-[#8C8E88] leading-normal font-sans font-normal text-left">
+                  The real note action will become available after authenticated membership, note authority, server persistence, and append-only Timeline insertion are connected.
+                </p>
+              </div>
+
+              <div className="grid grid-cols-2 gap-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setNoteContent('');
+                    setPreviewContent(null);
+                    setNoteError(null);
+                  }}
+                  className="w-full py-2 px-3 border border-[#242522] bg-[#0E0F0D] hover:bg-[#141513] text-[10px] font-mono font-bold text-[#8C8E88] hover:text-[#F3F1EA] rounded-[1px] cursor-pointer uppercase text-center transition-colors"
+                  style={{ fontFamily: 'var(--font-technical)' }}
+                >
+                  CLEAR DRAFT
+                </button>
+                <button
+                  type="button"
+                  onClick={closeNoteDrawer}
+                  className="w-full py-2 px-3 border border-[#242522] bg-[#0E0F0D] hover:bg-[#141513] text-[10px] font-mono font-bold text-[#F3F1EA] rounded-[1px] cursor-pointer uppercase text-center transition-colors"
+                  style={{ fontFamily: 'var(--font-technical)' }}
+                >
+                  CLOSE COMPOSER
+                </button>
+              </div>
+            </div>
+
+          </div>
+          
+          {/* Accessible offscreen live region for screen readers */}
+          <div className="sr-only" aria-live="polite">
+            {noteError ? `Validation error: ${noteError}` : ''}
+            {previewContent !== null ? `Local preview ready for draft: ${previewContent}` : ''}
+            {previewContent !== null && noteContent !== previewContent ? 'Local draft changed. Re-preview required.' : ''}
+          </div>
+        </div>
+      )}
 
       {/* Responder Context Drawer */}
       {isContextDrawerOpen && (
