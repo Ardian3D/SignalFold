@@ -13,3 +13,7 @@ Thumbs.db
 .vscode/
 .idea/
 base44/.app.jsonc
+base44/.app.json*
+base44/.types/
+base44/.cache/
+base44/*.log
