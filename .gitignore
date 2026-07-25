@@ -3,6 +3,12 @@ build/
 dist/
 coverage/
 .DS_Store
+Thumbs.db
 *.log
+.env
+.env.local
+.env.*.local
 .env*
 !.env.example
+.vscode/
+.idea/

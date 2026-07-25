@@ -884,11 +884,11 @@ describe('Incident Room Page Layout and Responsive Tests', () => {
     // Verify other authoritative controls are disabled
     const assignCommanderBtn = screen.getByRole('button', { name: 'ASSIGN COMMANDER' });
     const resolveIncidentBtn = screen.getByRole('button', { name: 'RESOLVE INCIDENT' });
-    expect(assignCommanderBtn).toBeDisabled();
-    expect(resolveIncidentBtn).toBeDisabled();
+    expect(assignCommanderBtn).toBeEnabled();
+    expect(resolveIncidentBtn).toBeEnabled();
 
     // Verify support copy on the command controls panel
-    expect(screen.getByText(/Authoritative incident controls remain disabled. Add Note, Change Status, and Change Severity are available as local, non-authoritative previews./i)).toBeInTheDocument();
+    expect(screen.getByText(/Authoritative incident controls remain disabled. Add Note, Change Status, Change Severity, and Assign Commander are available as local, non-authoritative previews./i)).toBeInTheDocument();
 
     // Verify CHANGE STATUS opens the drawer
     fireEvent.click(changeStatusBtn);
@@ -1043,8 +1043,8 @@ describe('Incident Room Page Layout and Responsive Tests', () => {
     expect(addNoteBtn).toBeEnabled();
     expect(changeStatusBtn).toBeEnabled();
     expect(changeSeverityBtn).toBeEnabled();
-    expect(assignCommanderBtn).toBeDisabled();
-    expect(resolveIncidentBtn).toBeDisabled();
+    expect(assignCommanderBtn).toBeEnabled();
+    expect(resolveIncidentBtn).toBeEnabled();
 
     // Click CHANGE SEVERITY to open drawer
     fireEvent.click(changeSeverityBtn);
@@ -1199,6 +1199,219 @@ describe('Incident Room Page Layout and Responsive Tests', () => {
 
     // Verify incident metadata remains completely unchanged
     expect(screen.getAllByText('NOT CONFIRMED').length).toBeGreaterThan(0);
+  });
+
+  it('verifies the Phase 04 Assign Commander shared preview trigger integration', () => {
+    vi.useFakeTimers();
+    render(
+      <AppProviders>
+        <RouterProvider router={getTestRouter()} />
+      </AppProviders>
+    );
+
+    // 1. Verify buttons inside INCIDENT COMMAND CONTROLS are correctly set up
+    const addNoteBtn = screen.getByRole('button', { name: 'ADD NOTE' });
+    const changeStatusBtn = screen.getByRole('button', { name: 'CHANGE STATUS' });
+    const changeSeverityBtn = screen.getByRole('button', { name: 'CHANGE SEVERITY' });
+    const assignCommanderBtn = screen.getByRole('button', { name: 'ASSIGN COMMANDER' });
+    const resolveIncidentBtn = screen.getByRole('button', { name: 'RESOLVE INCIDENT' });
+
+    expect(addNoteBtn).toBeEnabled();
+    expect(changeStatusBtn).toBeEnabled();
+    expect(changeSeverityBtn).toBeEnabled();
+    expect(assignCommanderBtn).toBeEnabled();
+    expect(resolveIncidentBtn).toBeEnabled();
+
+    // 2. Verify supporting copy
+    expect(screen.getByText(/Authoritative incident controls remain disabled. Add Note, Change Status, Change Severity, and Assign Commander are available as local, non-authoritative previews./i)).toBeInTheDocument();
+
+    // 3. Focus the command controls ASSIGN COMMANDER button and click it
+    assignCommanderBtn.focus();
+    fireEvent.click(assignCommanderBtn);
+
+    // 4. Verify only exactly one Commander Assignment Drawer exists in the DOM when open
+    let drawers = screen.getAllByRole('dialog');
+    expect(drawers.length).toBe(1);
+    expect(within(drawers[0]).getByText('COMMANDER ASSIGNMENT')).toBeInTheDocument();
+    expect(within(drawers[0]).getByText('MEMBERSHIP & AUTHORITY REVIEW / FRONTEND PREVIEW')).toBeInTheDocument();
+
+    // 5. Verify the required state of the drawer content
+    expect(within(drawers[0]).getByText('INCIDENT COMMANDER')).toBeInTheDocument();
+    expect(within(drawers[0]).getAllByText('UNASSIGNED').length).toBeGreaterThan(0);
+    expect(within(drawers[0]).getByText('ASSIGNMENT RECORD')).toBeInTheDocument();
+    expect(within(drawers[0]).getAllByText('NOT CREATED').length).toBeGreaterThan(0);
+    expect(within(drawers[0]).getAllByText('MEMBERSHIP DATA').length).toBeGreaterThan(0);
+    expect(within(drawers[0]).getAllByText('NOT LOADED').length).toBeGreaterThan(0);
+    expect(within(drawers[0]).getByText('MEMBERSHIP DATA NOT LOADED')).toBeInTheDocument();
+    expect(within(drawers[0]).getByText('OPERATING ROLE')).toBeInTheDocument();
+    expect(within(drawers[0]).getByText('COMMANDER ELIGIBILITY')).toBeInTheDocument();
+    expect(within(drawers[0]).getByText('COMMANDER ASSIGNMENT: NOT READY')).toBeInTheDocument();
+
+    // Trigger local readiness validation inside the drawer
+    const validateBtn = within(drawers[0]).getByRole('button', { name: 'VALIDATE ASSIGNMENT READINESS' });
+    fireEvent.click(validateBtn);
+    expect(within(drawers[0]).getByText('ASSIGNMENT READINESS INCOMPLETE')).toBeInTheDocument();
+
+    // The real assign button inside the drawer is disabled
+    const realAssignBtn = within(drawers[0]).getByRole('button', { name: 'ASSIGN INCIDENT COMMANDER' });
+    expect(realAssignBtn).toBeDisabled();
+
+    // 6. Close the drawer and verify focus returns to ASSIGN COMMANDER
+    const closeBtn = within(drawers[0]).getByLabelText('Close commander assignment review');
+    fireEvent.click(closeBtn);
+    
+    // Run the timers to trigger the setTimeout focus restoration
+    vi.advanceTimersByTime(50);
+    expect(document.activeElement).toBe(assignCommanderBtn);
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+
+    // 7. Click PREVIEW COMMANDER ASSIGNMENT inside the compact Responders panel
+    const responderTrigger = screen.getByRole('button', { name: 'PREVIEW COMMANDER ASSIGNMENT' });
+    responderTrigger.focus();
+    fireEvent.click(responderTrigger);
+
+    drawers = screen.getAllByRole('dialog');
+    expect(drawers.length).toBe(1);
+    expect(within(drawers[0]).getByText('COMMANDER ASSIGNMENT')).toBeInTheDocument();
+
+    // Close using CLOSE REVIEW button and verify focus returns to PREVIEW COMMANDER ASSIGNMENT
+    const closeReviewBtn = within(drawers[0]).getByRole('button', { name: 'CLOSE REVIEW' });
+    fireEvent.click(closeReviewBtn);
+
+    vi.advanceTimersByTime(50);
+    expect(document.activeElement).toBe(responderTrigger);
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+
+    // 8. Opening another Level 1 drawer closes Commander Assignment
+    fireEvent.click(assignCommanderBtn);
+    expect(screen.getByRole('dialog')).toBeInTheDocument();
+
+    // Click ADD NOTE trigger to open the note drawer, which should close Commander Assignment drawer
+    fireEvent.click(addNoteBtn);
+    expect(screen.queryByText('COMMANDER ASSIGNMENT')).not.toBeInTheDocument();
+    expect(screen.getByText('ADD INCIDENT NOTE')).toBeInTheDocument();
+
+    // Close the note drawer
+    const noteCloseBtn = within(screen.getByRole('dialog')).getByRole('button', { name: 'CLOSE COMPOSER' });
+    fireEvent.click(noteCloseBtn);
+    vi.advanceTimersByTime(50);
+
+    // 9. Timeline contains exactly 4 events, and header data remains completely unchanged
+    expect(screen.getAllByText('REPORTED').length).toBeGreaterThan(0);
+    expect(screen.getByText('4 MOCK EVENTS')).toBeInTheDocument();
+
+    vi.useRealTimers();
+  });
+
+  it('verifies Phase 05 Resolve Incident Drawer workflow and validation lifecycle', () => {
+    vi.useFakeTimers();
+    const { container } = render(
+      <AppProviders>
+        <RouterProvider router={getTestRouter()} />
+      </AppProviders>
+    );
+
+    // 1. Verify initially no resolve drawer is open
+    expect(screen.queryByText('RESOLVE INCIDENT', { selector: 'h2' })).not.toBeInTheDocument();
+
+    // 2. Click the RESOLVE INCIDENT trigger button
+    const resolveTrigger = screen.getByRole('button', { name: 'RESOLVE INCIDENT' });
+    expect(resolveTrigger).toBeInTheDocument();
+    resolveTrigger.focus();
+    fireEvent.click(resolveTrigger);
+
+    // 3. Verify Resolve Incident drawer is open
+    const drawer = screen.getByRole('dialog');
+    expect(drawer).toBeInTheDocument();
+    expect(within(drawer).getAllByText('RESOLVE INCIDENT')[0]).toBeInTheDocument();
+    expect(within(drawer).getByText('RESOLUTION READINESS / FRONTEND PREVIEW')).toBeInTheDocument();
+
+    // Verify all 8 sections are rendered
+    expect(within(drawer).getByText('01 / CURRENT INCIDENT STATE')).toBeInTheDocument();
+    expect(within(drawer).getByText('02 // RESOLUTION SUMMARY')).toBeInTheDocument();
+    expect(within(drawer).getByText('03 // ROOT CAUSE')).toBeInTheDocument();
+    expect(within(drawer).getByText('04 // SERVICE RECOVERY')).toBeInTheDocument();
+    expect(within(drawer).getByText('05 // REMAINING RISK & LIABILITY')).toBeInTheDocument();
+    expect(within(drawer).getByText('06 / CRITICAL TASK READINESS')).toBeInTheDocument();
+    expect(within(drawer).getByText('07 // CURRENT OPERATOR CONTEXT')).toBeInTheDocument();
+    expect(within(drawer).getByText('08 // VALIDATION CONTROL PANEL')).toBeInTheDocument();
+
+    // 4. Incomplete state behavior: button must be disabled and show missing requirements
+    const validateBtn = within(drawer).getByRole('button', { name: 'VALIDATE RESOLUTION READINESS' });
+    expect(validateBtn).toBeDisabled();
+    expect(validateBtn).toHaveAttribute('aria-disabled', 'true');
+
+    // Missing requirements list should be visible
+    expect(within(drawer).getByText('MISSING REQUIREMENTS FOR VALIDATION:')).toBeInTheDocument();
+    expect(within(drawer).getByText('Resolution Summary is empty')).toBeInTheDocument();
+    expect(within(drawer).getByText('Root Cause is not selected')).toBeInTheDocument();
+    expect(within(drawer).getByText('Service Recovery is not verified')).toBeInTheDocument();
+    expect(within(drawer).getByText('Remaining Risk is empty')).toBeInTheDocument();
+
+    // Clicking it when disabled does not trigger validation or render any results
+    fireEvent.click(validateBtn);
+    expect(within(drawer).queryByText('VALIDATION FAILED')).not.toBeInTheDocument();
+    expect(within(drawer).queryByText('RESOLUTION PACKAGE STRUCTURE VALID')).not.toBeInTheDocument();
+
+    // 5. Fill out form to satisfy criteria
+    const summaryTextarea = container.querySelector('#resolve-summary-input') as HTMLTextAreaElement;
+    expect(summaryTextarea).toBeInTheDocument();
+    fireEvent.change(summaryTextarea, { target: { value: 'Successfully resolved the payments issue by rolling back the latest broken deployment.' } });
+
+    const rootCauseYesBtn = within(drawer).getByRole('button', { name: 'YES' });
+    fireEvent.click(rootCauseYesBtn);
+
+    const recoveryBtn = within(drawer).getByText('SERVICE RECOVERY HAS BEEN VERIFIED').closest('button') as HTMLButtonElement;
+    expect(recoveryBtn).toBeInTheDocument();
+    fireEvent.click(recoveryBtn);
+
+    const riskInput = container.querySelector('#remaining-risk-input') as HTMLInputElement;
+    expect(riskInput).toBeInTheDocument();
+    fireEvent.change(riskInput, { target: { value: 'Minor risk of replication lag remaining.' } });
+
+    // Verify button is now enabled and missing requirements are hidden
+    expect(validateBtn).toBeEnabled();
+    expect(within(drawer).queryByText('MISSING REQUIREMENTS FOR VALIDATION:')).not.toBeInTheDocument();
+
+    // Click validate again
+    fireEvent.click(validateBtn);
+
+    // Verify validation passes
+    expect(within(drawer).queryByText('VALIDATION FAILED')).not.toBeInTheDocument();
+    
+    // Verify Validation Results are grouped into distinct validation blocks
+    expect(within(drawer).getByText('RESOLUTION PACKAGE STRUCTURE VALID')).toBeInTheDocument();
+    expect(within(drawer).getByText('INCIDENT STATE NOT ELIGIBLE')).toBeInTheDocument();
+    expect(within(drawer).getByText('AUTHORITY AND BACKEND READINESS INCOMPLETE')).toBeInTheDocument();
+
+    // 6. Modifying inputs after validation triggers the stale preview warning
+    fireEvent.change(riskInput, { target: { value: 'Modified risk level.' } });
+    expect(within(drawer).getByText('STALE PREVIEW - CHANGES DETECTED')).toBeInTheDocument();
+
+    // 7. Click close dispatches actions that reset the drawer to its unvalidated, clean starting state
+    const closeBtn = within(drawer).getByLabelText('Close resolve incident panel');
+    fireEvent.click(closeBtn);
+
+    // Run timers for setTimeout focus restoration
+    vi.advanceTimersByTime(50);
+    expect(document.activeElement).toBe(resolveTrigger);
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+
+    // Re-open and verify it is reset to clean starting state
+    fireEvent.click(resolveTrigger);
+    const reopenedDrawer = screen.getByRole('dialog');
+    expect(within(reopenedDrawer).queryByText('VALIDATION FAILED')).not.toBeInTheDocument();
+    expect(within(reopenedDrawer).queryByText('RESOLUTION PACKAGE STRUCTURE VALID')).not.toBeInTheDocument();
+    
+    const reopenedSummaryTextarea = container.querySelector('#resolve-summary-input') as HTMLTextAreaElement;
+    expect(reopenedSummaryTextarea.value).toBe('');
+
+    // Clean up
+    const finalCloseBtn = within(reopenedDrawer).getByLabelText('Close resolve incident panel');
+    fireEvent.click(finalCloseBtn);
+    vi.advanceTimersByTime(50);
+
+    vi.useRealTimers();
   });
 });
 

@@ -12,3 +12,7 @@ export type { SpinnerProps } from './Spinner';
 
 export { ProgressBar } from './ProgressBar';
 export type { ProgressBarProps } from './ProgressBar';
+
+export { RouteFeedbackState } from './RouteFeedbackState';
+export type { RouteFeedbackStateProps } from './RouteFeedbackState';
+export { RouteErrorBoundary } from './RouteErrorBoundary';

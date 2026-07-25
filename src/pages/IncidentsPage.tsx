@@ -1,5 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { useSearchParams, Link } from 'react-router-dom';
+import { useFeedbackState } from '@/context/FeedbackStateContext';
+import { RouteFeedbackState } from '@/components/feedback/RouteFeedbackState';
 
 export interface IncidentRecord {
   code: string;
@@ -66,6 +68,8 @@ export const mockIncidents: IncidentRecord[] = [
  */
 export function IncidentsPage() {
   const [searchParams, setSearchParams] = useSearchParams();
+  const { getFeedbackState } = useFeedbackState();
+  const feedback = getFeedbackState('incidents');
 
   // Allowed lists for safe parameter validation
   const validSeverities = ['SEV1', 'SEV2', 'SEV3', 'SEV4'];
@@ -194,7 +198,7 @@ export function IncidentsPage() {
     const newParams = new URLSearchParams(searchParams);
     
     // Explicitly delete only the filter-toolbar related parameters
-    const filterKeys = ['q', 'severity', 'status', 'service', 'commander', 'sort', 'direction'];
+    const filterKeys = ['q', 'severity', 'status', 'service', 'commander', 'sort', 'direction', 'previewUiState', 'previewUiScope'];
     filterKeys.forEach(key => newParams.delete(key));
     
     setSearchParams(newParams);
@@ -260,41 +264,53 @@ export function IncidentsPage() {
   };
 
   // 4. Sort records
-  const sortedRecords = [...filteredRecords].sort((a, b) => {
-    // If sorting by CREATED TIME or UPDATED TIME, always return the index order of standard array (stable canonical)
-    if (sortVal === 'CREATED TIME' || sortVal === 'UPDATED TIME') {
-      const indexA = mockIncidents.indexOf(a);
-      const indexB = mockIncidents.indexOf(b);
-      return indexA - indexB;
-    }
+  const sortedRecords = (feedback && feedback.kind === 'empty_filtered')
+    ? []
+    : [...filteredRecords].sort((a, b) => {
+        // If sorting by CREATED TIME or UPDATED TIME, always return the index order of standard array (stable canonical)
+        if (sortVal === 'CREATED TIME' || sortVal === 'UPDATED TIME') {
+          const indexA = mockIncidents.indexOf(a);
+          const indexB = mockIncidents.indexOf(b);
+          return indexA - indexB;
+        }
 
-    if (sortVal === 'SEVERITY') {
-      const isUnconfirmedA = a.severity === 'NOT SPECIFIED' || a.severity.includes('AI SUGGESTION');
-      const isUnconfirmedB = b.severity === 'NOT SPECIFIED' || b.severity.includes('AI SUGGESTION');
-      
-      if (isUnconfirmedA && !isUnconfirmedB) {
-        return 1; // unconfirmed always goes last
-      }
-      if (!isUnconfirmedA && isUnconfirmedB) {
-        return -1; // unconfirmed always goes last
-      }
-      if (isUnconfirmedA && isUnconfirmedB) {
-        return mockIncidents.indexOf(a) - mockIncidents.indexOf(b); // stable order for unconfirmed
-      }
-      
-      // Both are confirmed
-      const rankA = getSeverityRank(a);
-      const rankB = getSeverityRank(b);
-      if (rankA !== rankB) {
-        return directionVal === 'ASCENDING' ? rankA - rankB : rankB - rankA;
-      }
-    }
-    
-    // For tie-breakers, use index order (stable)
-    const indexA = mockIncidents.indexOf(a);
-    const indexB = mockIncidents.indexOf(b);
-    return indexA - indexB;
-  });
+        if (sortVal === 'SEVERITY') {
+          const isUnconfirmedA = a.severity === 'NOT SPECIFIED' || a.severity.includes('AI SUGGESTION');
+          const isUnconfirmedB = b.severity === 'NOT SPECIFIED' || b.severity.includes('AI SUGGESTION');
+          
+          if (isUnconfirmedA && !isUnconfirmedB) {
+            return 1; // unconfirmed always goes last
+          }
+          if (!isUnconfirmedA && isUnconfirmedB) {
+            return -1; // unconfirmed always goes last
+          }
+          if (isUnconfirmedA && isUnconfirmedB) {
+            return mockIncidents.indexOf(a) - mockIncidents.indexOf(b); // stable order for unconfirmed
+          }
+          
+          // Both are confirmed
+          const rankA = getSeverityRank(a);
+          const rankB = getSeverityRank(b);
+          if (rankA !== rankB) {
+            return directionVal === 'ASCENDING' ? rankA - rankB : rankB - rankA;
+          }
+        }
+        
+        // For tie-breakers, use index order (stable)
+        const indexA = mockIncidents.indexOf(a);
+        const indexB = mockIncidents.indexOf(b);
+        return indexA - indexB;
+      });
+
+  if (feedback && feedback.isActive && feedback.kind !== 'empty_filtered') {
+    return (
+      <RouteFeedbackState
+        kind={feedback.kind}
+        scope="incidents"
+        onRetry={feedback.retry}
+      />
+    );
+  }
 
   return (
     <section className="space-y-6">
@@ -632,8 +648,17 @@ export function IncidentsPage() {
         {/* Main Content Area */}
         <div className="p-4">
           {sortedRecords.length === 0 ? (
-            /* Filtered Empty State */
-            <div className="border border-dashed border-[#242522] bg-[#141513]/10 py-16 px-4 text-center rounded-[2px]">
+            feedback?.kind === 'empty_filtered' ? (
+              <RouteFeedbackState
+                kind="empty_filtered"
+                scope="incidents"
+                onResetFilters={handleResetFilters}
+                availableMockCount={mockIncidents.length}
+                filteredMockCount={0}
+              />
+            ) : (
+              /* Filtered Empty State */
+              <div className="border border-dashed border-[#242522] bg-[#141513]/10 py-16 px-4 text-center rounded-[2px]">
               <div className="w-full max-w-[480px] min-w-0 mx-auto text-center space-y-4">
                 <h3 
                   className="text-xs font-mono font-bold tracking-widest text-[#A8AAA3] uppercase"
@@ -656,6 +681,7 @@ export function IncidentsPage() {
                 </div>
               </div>
             </div>
+            )
           ) : (
             <>
               {/* Layout 3: Wide/Desktop View: Complete 8-column Semantic Table (activated when containerWidth >= 1280px) */}
@@ -796,6 +822,14 @@ export function IncidentsPage() {
                               >
                                 OPEN INCIDENT ROOM
                               </Link>
+                            ) : record.title === 'RESOLVED INCIDENT SEED RECORD' ? (
+                              <Link
+                                to="/app/incidents/resolved-seed"
+                                className="inline-flex items-center justify-center text-[9px] font-bold tracking-wider uppercase border border-[#D6FF3F]/30 bg-[#D6FF3F]/10 hover:bg-[#D6FF3F]/20 text-[#D6FF3F] hover:border-[#D6FF3F]/40 focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#D6FF3F] px-2 py-1 rounded-[1px] transition-colors"
+                                style={{ fontFamily: 'var(--font-technical)' }}
+                              >
+                                OPEN RESOLVED RECORD
+                              </Link>
                             ) : (
                               <button
                                 type="button"
@@ -881,6 +915,14 @@ export function IncidentsPage() {
                               style={{ fontFamily: 'var(--font-technical)' }}
                             >
                               OPEN INCIDENT ROOM
+                            </Link>
+                          ) : record.title === 'RESOLVED INCIDENT SEED RECORD' ? (
+                            <Link
+                              to="/app/incidents/resolved-seed"
+                              className="inline-flex items-center justify-center text-[9px] font-bold tracking-wider uppercase border border-[#D6FF3F]/30 bg-[#D6FF3F]/10 hover:bg-[#D6FF3F]/20 text-[#D6FF3F] hover:border-[#D6FF3F]/40 focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#D6FF3F] px-2.5 py-1 rounded-[1px] transition-colors"
+                              style={{ fontFamily: 'var(--font-technical)' }}
+                            >
+                              OPEN RESOLVED RECORD
                             </Link>
                           ) : (
                             <button
@@ -986,6 +1028,14 @@ export function IncidentsPage() {
                             style={{ fontFamily: 'var(--font-technical)' }}
                           >
                             OPEN INCIDENT ROOM
+                          </Link>
+                        ) : record.title === 'RESOLVED INCIDENT SEED RECORD' ? (
+                          <Link
+                            to="/app/incidents/resolved-seed"
+                            className="inline-flex items-center justify-center text-[9px] font-mono font-bold tracking-wider uppercase border border-[#D6FF3F]/30 bg-[#D6FF3F]/10 hover:bg-[#D6FF3F]/20 text-[#D6FF3F] hover:border-[#D6FF3F]/40 focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#D6FF3F] px-2.5 py-1 rounded-[1px] transition-colors"
+                            style={{ fontFamily: 'var(--font-technical)' }}
+                          >
+                            OPEN RESOLVED RECORD
                           </Link>
                         ) : (
                           <button

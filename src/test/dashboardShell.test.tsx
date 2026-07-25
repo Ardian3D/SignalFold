@@ -9,17 +9,30 @@ import { NotFoundPage } from '@/pages/NotFoundPage';
 
 // Simple mockup routes for testing router behaviors
 const getTestRouter = (initialPath: string) => {
+  const dashboardElement = (
+    <RootLayout>
+      <AppShell>
+        <DashboardPage />
+      </AppShell>
+    </RootLayout>
+  );
   return createMemoryRouter(
     [
       {
         path: '/app',
-        element: (
-          <RootLayout>
-            <AppShell>
-              <DashboardPage />
-            </AppShell>
-          </RootLayout>
-        ),
+        element: dashboardElement,
+      },
+      {
+        path: '/app/services',
+        element: dashboardElement,
+      },
+      {
+        path: '/app/team',
+        element: dashboardElement,
+      },
+      {
+        path: '/app/settings',
+        element: dashboardElement,
       },
       {
         path: '*',
@@ -119,8 +132,8 @@ describe('SignalFold AppShell & Dashboard Integration Tests', () => {
     );
 
     // Click on elements that represent pending links to check if they stay on /app
-    const servicesElement = screen.getAllByText('SERVICES')[0];
-    fireEvent.click(servicesElement);
+    const settingsElement = screen.getAllByText('SETTINGS')[0];
+    fireEvent.click(settingsElement);
 
     // Still renders Dashboard content
     expect(screen.getByText('OPERATIONS OVERVIEW')).toBeInTheDocument();

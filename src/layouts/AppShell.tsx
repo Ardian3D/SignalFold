@@ -2,6 +2,11 @@ import { ReactNode, useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { Menu, X, Search, Bell, User } from 'lucide-react';
 import { BrandLogo } from '@/components/brand/BrandLogo';
+import { ConnectionProvider } from '@/context/ConnectionContext';
+import { AiOperationProvider } from '@/context/AiOperationContext';
+import { SystemConnectivityBanner } from '@/components/feedback/SystemConnectivityBanner';
+import { FeedbackStateProvider } from '@/context/FeedbackStateContext';
+import { RouteErrorBoundary } from '@/components/feedback/RouteErrorBoundary';
 
 interface AppShellProps {
   children: ReactNode;
@@ -13,12 +18,27 @@ interface AppShellProps {
  * and responsive mobile (<1024px) top header, drawer menu, and bottom navigation.
  */
 export function AppShell({ children }: AppShellProps) {
+  return (
+    <ConnectionProvider>
+      <AiOperationProvider>
+        <FeedbackStateProvider>
+          <AppShellContent>{children}</AppShellContent>
+        </FeedbackStateProvider>
+      </AiOperationProvider>
+    </ConnectionProvider>
+  );
+}
+
+function AppShellContent({ children }: AppShellProps) {
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const location = useLocation();
   const isIncidentsActive = location.pathname === '/app/incidents' || location.pathname === '/app/incidents/SF-2026-0042';
   const isIncidentsNewActive = location.pathname === '/app/incidents/new';
   const isDashboardActive = location.pathname === '/app';
   const isIncidentRoomActive = location.pathname === '/app/incidents/SF-2026-0042';
+  const isServicesActive = location.pathname === '/app/services';
+  const isTeamActive = location.pathname === '/app/team';
+  const isSettingsActive = location.pathname === '/app/settings';
 
   // Set page title for the SignalFold App
   useEffect(() => {
@@ -28,10 +48,16 @@ export function AppShell({ children }: AppShellProps) {
       document.title = 'Create Incident — SignalFold';
     } else if (isIncidentsActive) {
       document.title = 'Incidents — SignalFold';
+    } else if (isServicesActive) {
+      document.title = 'Services — SignalFold';
+    } else if (isTeamActive) {
+      document.title = 'Team — SignalFold';
+    } else if (isSettingsActive) {
+      document.title = 'Settings — SignalFold';
     } else {
       document.title = 'Dashboard — SignalFold';
     }
-  }, [isIncidentsActive, isIncidentsNewActive, isIncidentRoomActive]);
+  }, [isIncidentsActive, isIncidentsNewActive, isIncidentRoomActive, isServicesActive, isTeamActive, isSettingsActive]);
 
   // Handle keydown to close mobile menu drawer on Escape key
   useEffect(() => {
@@ -167,25 +193,57 @@ export function AppShell({ children }: AppShellProps) {
               </Link>
             )}
 
-            <div
-              role="link"
-              aria-disabled="true"
-              className="flex items-center justify-between px-3 py-2 text-xs font-mono font-bold text-[#5C5E58] border border-dashed border-[#242522]/60 select-none rounded-[2px]"
-              style={{ fontFamily: 'var(--font-technical)' }}
-            >
-              <span>SERVICES</span>
-              <span className="text-[9px] tracking-wider uppercase text-[#5C5E58] border border-[#242522]/60 px-1 py-0.5">PENDING</span>
-            </div>
+            {isServicesActive ? (
+              <Link
+                to="/app/services"
+                aria-current="page"
+                className="flex items-center justify-between px-3 py-2 text-xs font-mono font-bold text-[#D6FF3F] bg-[#141513] border border-[#242522] focus-visible:outline-2 focus-visible:outline-[#4B78FF] rounded-[2px] w-full"
+                style={{ fontFamily: 'var(--font-technical)' }}
+              >
+                <span className="flex items-center gap-2">
+                  <span className="w-1.5 h-1.5 rounded-full bg-[#D6FF3F]" />
+                  SERVICES
+                </span>
+                <span className="text-[9px] tracking-wider uppercase text-[#D6FF3F] border border-[#D6FF3F]/20 px-1 py-0.5 bg-[#D6FF3F]/5">ACTIVE</span>
+              </Link>
+            ) : (
+              <Link
+                to="/app/services"
+                className="flex items-center justify-between px-3 py-2 text-xs font-mono font-bold text-[#A8AAA3] hover:text-[#D6FF3F] hover:bg-[#141513]/40 border border-transparent focus-visible:outline-2 focus-visible:outline-[#4B78FF] rounded-[2px] w-full"
+                style={{ fontFamily: 'var(--font-technical)' }}
+              >
+                <span className="flex items-center gap-2">
+                  SERVICES
+                </span>
+                <span className="text-[9px] tracking-wider uppercase text-[#A8AAA3] border border-[#242522]/60 px-1 py-0.5 bg-[#141513]/20">PREVIEW</span>
+              </Link>
+            )}
 
-            <div
-              role="link"
-              aria-disabled="true"
-              className="flex items-center justify-between px-3 py-2 text-xs font-mono font-bold text-[#5C5E58] border border-dashed border-[#242522]/60 select-none rounded-[2px]"
-              style={{ fontFamily: 'var(--font-technical)' }}
-            >
-              <span>TEAM</span>
-              <span className="text-[9px] tracking-wider uppercase text-[#5C5E58] border border-[#242522]/60 px-1 py-0.5">PENDING</span>
-            </div>
+            {isTeamActive ? (
+              <Link
+                to="/app/team"
+                aria-current="page"
+                className="flex items-center justify-between px-3 py-2 text-xs font-mono font-bold text-[#D6FF3F] bg-[#141513] border border-[#242522] focus-visible:outline-2 focus-visible:outline-[#4B78FF] rounded-[2px] w-full"
+                style={{ fontFamily: 'var(--font-technical)' }}
+              >
+                <span className="flex items-center gap-2">
+                  <span className="w-1.5 h-1.5 rounded-full bg-[#D6FF3F]" />
+                  TEAM
+                </span>
+                <span className="text-[9px] tracking-wider uppercase text-[#D6FF3F] border border-[#D6FF3F]/20 px-1 py-0.5 bg-[#D6FF3F]/5">ACTIVE</span>
+              </Link>
+            ) : (
+              <Link
+                to="/app/team"
+                className="flex items-center justify-between px-3 py-2 text-xs font-mono font-bold text-[#A8AAA3] hover:text-[#D6FF3F] hover:bg-[#141513]/40 border border-transparent focus-visible:outline-2 focus-visible:outline-[#4B78FF] rounded-[2px] w-full"
+                style={{ fontFamily: 'var(--font-technical)' }}
+              >
+                <span className="flex items-center gap-2">
+                  TEAM
+                </span>
+                <span className="text-[9px] tracking-wider uppercase text-[#A8AAA3] border border-[#242522]/60 px-1 py-0.5 bg-[#141513]/20">PREVIEW</span>
+              </Link>
+            )}
           </nav>
         </div>
 
@@ -195,15 +253,31 @@ export function AppShell({ children }: AppShellProps) {
         {/* Sidebar Bottom Segment */}
         <div className="space-y-4">
           {/* Settings Secondary Navigation */}
-          <div
-            role="link"
-            aria-disabled="true"
-            className="flex items-center justify-between px-3 py-2 text-xs font-mono font-bold text-[#5C5E58] border border-dashed border-[#242522]/60 select-none rounded-[2px]"
-            style={{ fontFamily: 'var(--font-technical)' }}
-          >
-            <span>SETTINGS</span>
-            <span className="text-[9px] tracking-wider uppercase text-[#5C5E58] border border-[#242522]/60 px-1 py-0.5">PENDING</span>
-          </div>
+          {isSettingsActive ? (
+            <Link
+              to="/app/settings"
+              aria-current="page"
+              className="flex items-center justify-between px-3 py-2 text-xs font-mono font-bold text-[#D6FF3F] bg-[#141513] border border-[#242522] focus-visible:outline-2 focus-visible:outline-[#4B78FF] rounded-[2px] w-full"
+              style={{ fontFamily: 'var(--font-technical)' }}
+            >
+              <span className="flex items-center gap-2">
+                <span className="w-1.5 h-1.5 rounded-full bg-[#D6FF3F]" />
+                SETTINGS
+              </span>
+              <span className="text-[9px] tracking-wider uppercase text-[#D6FF3F] border border-[#D6FF3F]/20 px-1 py-0.5 bg-[#D6FF3F]/5">ACTIVE</span>
+            </Link>
+          ) : (
+            <Link
+              to="/app/settings"
+              className="flex items-center justify-between px-3 py-2 text-xs font-mono font-bold text-[#A8AAA3] hover:text-[#D6FF3F] hover:bg-[#141513]/40 border border-transparent focus-visible:outline-2 focus-visible:outline-[#4B78FF] rounded-[2px] w-full"
+              style={{ fontFamily: 'var(--font-technical)' }}
+            >
+              <span className="flex items-center gap-2">
+                SETTINGS
+              </span>
+              <span className="text-[9px] tracking-wider uppercase text-[#A8AAA3] border border-[#242522]/60 px-1 py-0.5 bg-[#141513]/20">PREVIEW</span>
+            </Link>
+          )}
 
           {/* New Incident Primary Enabled Action */}
           {isIncidentsNewActive ? (
@@ -338,35 +412,89 @@ export function AppShell({ children }: AppShellProps) {
                   </Link>
                 )}
 
-                <div
-                  role="link"
-                  aria-disabled="true"
-                  className="flex items-center justify-between px-3 py-2 text-xs font-mono font-bold text-[#5C5E58] border border-dashed border-[#242522]/60 select-none rounded-[2px]"
-                  style={{ fontFamily: 'var(--font-technical)' }}
-                >
-                  <span>SERVICES</span>
-                  <span className="text-[9px] tracking-wider uppercase text-[#5C5E58] border border-[#242522]/60 px-1 py-0.5">PENDING</span>
-                </div>
+                {isServicesActive ? (
+                  <Link
+                    to="/app/services"
+                    aria-current="page"
+                    onClick={() => setIsDrawerOpen(false)}
+                    className="flex items-center justify-between px-3 py-2 text-xs font-mono font-bold text-[#D6FF3F] bg-[#141513] border border-[#242522] focus-visible:outline-2 focus-visible:outline-[#4B78FF] rounded-[2px] w-full"
+                    style={{ fontFamily: 'var(--font-technical)' }}
+                  >
+                    <span className="flex items-center gap-2">
+                      <span className="w-1.5 h-1.5 rounded-full bg-[#D6FF3F]" />
+                      SERVICES
+                    </span>
+                    <span className="text-[9px] tracking-wider uppercase text-[#D6FF3F] border border-[#D6FF3F]/20 px-1 py-0.5 bg-[#D6FF3F]/5">ACTIVE</span>
+                  </Link>
+                ) : (
+                  <Link
+                    to="/app/services"
+                    onClick={() => setIsDrawerOpen(false)}
+                    className="flex items-center justify-between px-3 py-2 text-xs font-mono font-bold text-[#A8AAA3] hover:text-[#D6FF3F] hover:bg-[#141513]/40 border border-transparent focus-visible:outline-2 focus-visible:outline-[#4B78FF] rounded-[2px] w-full"
+                    style={{ fontFamily: 'var(--font-technical)' }}
+                  >
+                    <span className="flex items-center gap-2">
+                      SERVICES
+                    </span>
+                    <span className="text-[9px] tracking-wider uppercase text-[#A8AAA3] border border-[#242522]/60 px-1 py-0.5 bg-[#141513]/20">PREVIEW</span>
+                  </Link>
+                )}
 
-                <div
-                  role="link"
-                  aria-disabled="true"
-                  className="flex items-center justify-between px-3 py-2 text-xs font-mono font-bold text-[#5C5E58] border border-dashed border-[#242522]/60 select-none rounded-[2px]"
-                  style={{ fontFamily: 'var(--font-technical)' }}
-                >
-                  <span>TEAM</span>
-                  <span className="text-[9px] tracking-wider uppercase text-[#5C5E58] border border-[#242522]/60 px-1 py-0.5">PENDING</span>
-                </div>
+                {isTeamActive ? (
+                  <Link
+                    to="/app/team"
+                    aria-current="page"
+                    onClick={() => setIsDrawerOpen(false)}
+                    className="flex items-center justify-between px-3 py-2 text-xs font-mono font-bold text-[#D6FF3F] bg-[#141513] border border-[#242522] focus-visible:outline-2 focus-visible:outline-[#4B78FF] rounded-[2px] w-full"
+                    style={{ fontFamily: 'var(--font-technical)' }}
+                  >
+                    <span className="flex items-center gap-2">
+                      <span className="w-1.5 h-1.5 rounded-full bg-[#D6FF3F]" />
+                      TEAM
+                    </span>
+                    <span className="text-[9px] tracking-wider uppercase text-[#D6FF3F] border border-[#D6FF3F]/20 px-1 py-0.5 bg-[#D6FF3F]/5">ACTIVE</span>
+                  </Link>
+                ) : (
+                  <Link
+                    to="/app/team"
+                    onClick={() => setIsDrawerOpen(false)}
+                    className="flex items-center justify-between px-3 py-2 text-xs font-mono font-bold text-[#A8AAA3] hover:text-[#D6FF3F] hover:bg-[#141513]/40 border border-transparent focus-visible:outline-2 focus-visible:outline-[#4B78FF] rounded-[2px] w-full"
+                    style={{ fontFamily: 'var(--font-technical)' }}
+                  >
+                    <span className="flex items-center gap-2">
+                      TEAM
+                    </span>
+                    <span className="text-[9px] tracking-wider uppercase text-[#A8AAA3] border border-[#242522]/60 px-1 py-0.5 bg-[#141513]/20">PREVIEW</span>
+                  </Link>
+                )}
 
-                <div
-                  role="link"
-                  aria-disabled="true"
-                  className="flex items-center justify-between px-3 py-2 text-xs font-mono font-bold text-[#5C5E58] border border-dashed border-[#242522]/60 select-none rounded-[2px]"
-                  style={{ fontFamily: 'var(--font-technical)' }}
-                >
-                  <span>SETTINGS</span>
-                  <span className="text-[9px] tracking-wider uppercase text-[#5C5E58] border border-[#242522]/60 px-1 py-0.5">PENDING</span>
-                </div>
+                {isSettingsActive ? (
+                  <Link
+                    to="/app/settings"
+                    aria-current="page"
+                    onClick={() => setIsDrawerOpen(false)}
+                    className="flex items-center justify-between px-3 py-2 text-xs font-mono font-bold text-[#D6FF3F] bg-[#141513] border border-[#242522] focus-visible:outline-2 focus-visible:outline-[#4B78FF] rounded-[2px] w-full"
+                    style={{ fontFamily: 'var(--font-technical)' }}
+                  >
+                    <span className="flex items-center gap-2">
+                      <span className="w-1.5 h-1.5 rounded-full bg-[#D6FF3F]" />
+                      SETTINGS
+                    </span>
+                    <span className="text-[9px] tracking-wider uppercase text-[#D6FF3F] border border-[#D6FF3F]/20 px-1 py-0.5 bg-[#D6FF3F]/5">ACTIVE</span>
+                  </Link>
+                ) : (
+                  <Link
+                    to="/app/settings"
+                    onClick={() => setIsDrawerOpen(false)}
+                    className="flex items-center justify-between px-3 py-2 text-xs font-mono font-bold text-[#A8AAA3] hover:text-[#D6FF3F] hover:bg-[#141513]/40 border border-transparent focus-visible:outline-2 focus-visible:outline-[#4B78FF] rounded-[2px] w-full"
+                    style={{ fontFamily: 'var(--font-technical)' }}
+                  >
+                    <span className="flex items-center gap-2">
+                      SETTINGS
+                    </span>
+                    <span className="text-[9px] tracking-wider uppercase text-[#A8AAA3] border border-[#242522]/60 px-1 py-0.5 bg-[#141513]/20">PREVIEW</span>
+                  </Link>
+                )}
               </div>
 
               <div className="pt-6 border-t border-[#242522] space-y-4">
@@ -439,12 +567,18 @@ export function AppShell({ children }: AppShellProps) {
                 </>
               ) : isIncidentsActive ? (
                 <span className="text-[#A8AAA3]">INCIDENTS</span>
+              ) : isServicesActive ? (
+                <span className="text-[#A8AAA3]">SERVICES</span>
+              ) : isTeamActive ? (
+                <span className="text-[#A8AAA3]">TEAM</span>
+              ) : isSettingsActive ? (
+                <span className="text-[#A8AAA3]">SETTINGS</span>
               ) : (
                 <span className="text-[#A8AAA3]">OPERATIONS</span>
               )}
             </nav>
             <h1 className="text-xs font-mono font-bold tracking-wider text-[#F3F1EA] uppercase mt-0.5" style={{ fontFamily: 'var(--font-technical)' }}>
-              {isIncidentRoomActive ? 'INCIDENT ROOM' : isIncidentsNewActive ? 'NEW INCIDENT' : isIncidentsActive ? 'INCIDENTS' : 'DASHBOARD'}
+              {isIncidentRoomActive ? 'INCIDENT ROOM' : isIncidentsNewActive ? 'NEW INCIDENT' : isIncidentsActive ? 'INCIDENTS' : isServicesActive ? 'SERVICE CATALOG' : isTeamActive ? 'TEAM & MEMBERSHIP' : 'DASHBOARD'}
             </h1>
           </div>
 
@@ -490,9 +624,13 @@ export function AppShell({ children }: AppShellProps) {
           </div>
         </header>
 
+        <SystemConnectivityBanner />
+
         {/* MAIN WORKSPACE CANVAS CONTAINER */}
         <main id="main-content" className="flex-1 p-4 sm:p-6 lg:p-8 max-w-7xl w-full mx-auto pb-24 lg:pb-12 text-left">
-          {children}
+          <RouteErrorBoundary>
+            {children}
+          </RouteErrorBoundary>
         </main>
       </div>
 

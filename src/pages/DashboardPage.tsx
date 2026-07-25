@@ -1,5 +1,7 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
+import { useFeedbackState } from '@/context/FeedbackStateContext';
+import { RouteFeedbackState } from '@/components/feedback/RouteFeedbackState';
 
 interface RecentActivityItem {
   sequence: string;
@@ -142,6 +144,9 @@ const recentActivities: RecentActivityItem[] = [
  * No real dashboard data, metric cards, or charts are included yet.
  */
 export function DashboardPage() {
+  const { getFeedbackState } = useFeedbackState();
+  const feedback = getFeedbackState('dashboard');
+
   const [title, setTitle] = React.useState('');
   const [description, setDescription] = React.useState('');
   const [service, setService] = React.useState('');
@@ -149,6 +154,16 @@ export function DashboardPage() {
   const [isSubmitting, setIsSubmitting] = React.useState(false);
   const [submitStatus, setSubmitStatus] = React.useState<'idle' | 'success'>('idle');
   const [errors, setErrors] = React.useState<{ title?: string; description?: string }>({});
+
+  if (feedback && feedback.isActive) {
+    return (
+      <RouteFeedbackState
+        kind={feedback.kind}
+        scope="dashboard"
+        onRetry={feedback.retry}
+      />
+    );
+  }
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
