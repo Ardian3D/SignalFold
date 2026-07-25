@@ -25,8 +25,8 @@ To adhere strictly to PRD Section 20.2 and Phase 1 correction mandates:
 - **No Network Font Requests:** All fonts (`Sora`, `Inter`, `IBM Plex Mono`) are bundled locally via `@fontsource`.
 - **No SVG Reconstructions:** All unofficial SVG reconstructions (`SignalFoldSvgMark`) were deleted.
 - **Official Asset Usage:**
-  - `BrandLogo` uses `src/assets/brand/SignalFold-logo.png` exclusively for all lockup displays.
-  - `BrandMark` uses `public/favicon.ico` for small icon contexts (&le; 32px) to prevent raster pixelation.
+  - `BrandLogo` uses `/SignalFold-logo.png` from `public/SignalFold-logo.png` exclusively for all lockup displays.
+  - `BrandMark` uses `src/app/favicon.ico` for small icon contexts (&le; 32px) to prevent raster pixelation.
 
 ### 2.2 Component Usage
 Implemented in `src/components/brand/BrandLogo.tsx` and `src/components/brand/BrandMark.tsx`:

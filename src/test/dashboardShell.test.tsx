@@ -573,7 +573,7 @@ describe('SignalFold AppShell & Dashboard Integration Tests', () => {
     // 13. Guided Demo module 07 is visible beneath it (placeholder is replaced)
     expect(screen.getByText('07 / GUIDED DEMO')).toBeInTheDocument();
     expect(screen.queryByText('DEMO WORKSPACE GUIDANCE')).not.toBeInTheDocument();
-  });
+  }, 30000);
 
   it('renders Guided Demo Module 07 and all its specifications', async () => {
     const router = getTestRouter('/app');

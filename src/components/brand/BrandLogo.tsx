@@ -1,5 +1,4 @@
 import React from 'react';
-import signalFoldLogo from '../../assets/brand/SignalFold-logo.png';
 
 // Brand image files are binary assets. Never read or rewrite them as UTF-8 strings.
 
@@ -41,7 +40,7 @@ const heightConfig = {
 
 /**
  * SignalFold Official BrandLogo Component
- * Uses canonical PNG lockup from src/assets/brand/SignalFold-logo.png
+ * Uses the canonical public PNG lockup at /SignalFold-logo.png.
  */
 export const BrandLogo: React.FC<BrandLogoProps> = ({
   size = 'md',
@@ -66,7 +65,7 @@ export const BrandLogo: React.FC<BrandLogoProps> = ({
       }}
     >
       <img
-        src={signalFoldLogo}
+        src="/SignalFold-logo.png"
         alt={alt}
         loading={loading}
         className={`${heightConfig[size]} w-auto object-contain shrink-0`}

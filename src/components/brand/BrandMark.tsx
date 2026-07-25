@@ -1,4 +1,5 @@
 import React from 'react';
+import faviconUrl from '@/app/favicon.ico';
 
 export interface BrandMarkProps {
   /**
@@ -35,7 +36,7 @@ const sizeMap = {
 
 /**
  * SignalFold Official BrandMark Component
- * Uses official public/favicon.ico for small icon contexts.
+ * Uses the official favicon asset for small icon contexts.
  */
 export const BrandMark: React.FC<BrandMarkProps> = ({
   size = 'md',
@@ -59,7 +60,7 @@ export const BrandMark: React.FC<BrandMarkProps> = ({
       }}
     >
       <img
-        src="/favicon.ico"
+        src={faviconUrl}
         alt={alt}
         className={`${sizeMap[size]} object-contain shrink-0`}
         loading="eager"

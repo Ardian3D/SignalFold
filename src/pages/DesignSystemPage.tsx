@@ -118,7 +118,7 @@ export const DesignSystemPage: React.FC = () => {
         <SectionHeader
           eyebrow="1. Brand Principles & Official Assets"
           title="Official Logo & Lockup Architecture"
-          description="SignalFold uses strictly official brand assets (src/assets/brand/SignalFold-logo.png and public/favicon.ico)."
+          description="SignalFold uses strictly official brand assets (public/SignalFold-logo.png and src/app/favicon.ico)."
         />
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
