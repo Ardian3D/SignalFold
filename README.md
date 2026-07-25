@@ -59,6 +59,13 @@ SignalFold uses local environments for frontend configuration. See `.env.example
 - Sensitive environment secrets (such as Base44 credentials or DeepSeek API keys) **must never** use `VITE_` prefixes. They belong strictly in backend and server-side configurations.
 - `VITE_DATA_MODE="mock"` is the default frontend configuration for standalone preview and QA validation.
 
+Base44 public runtime configuration is optional during this foundation phase:
+- `VITE_BASE44_APP_ID` identifies the public Base44 application and may remain empty.
+- `VITE_BASE44_USE_LOCAL_DEV` enables the local Base44 server only in explicit development mode.
+- `VITE_BASE44_LOCAL_SERVER_URL` defaults to `http://localhost:4400` for that local-only case.
+
+Mock mode remains the safe default. No `VITE_` variable may contain an authentication token, service-role credential, DeepSeek key, or other secret.
+
 ---
 
 ## 06 / Available Routes

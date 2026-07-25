@@ -23,7 +23,7 @@ The visual identity is locked to the official **SignalFold "Calm during Chaos"**
   - *Body Text:* Inter (Optimized for readability under operational stress)
 - **Logos:**
   - *Primary Brand Lockup:* PNG image loaded directly via the `/SignalFold-logo.png` relative asset.
-  - *Favicon (BrandMark):* PNG icon loaded via `/favicon.ico`.
+  - *Favicon (BrandMark):* ICO icon sourced from `src/app/favicon.ico`.
 
 ---
 

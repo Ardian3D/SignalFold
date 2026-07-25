@@ -24,7 +24,7 @@ describe('SignalFold — Brand Assets & Components Tests', () => {
     render(<BrandMark size="md" />);
     const img = screen.getByAltText('SignalFold Mark') as HTMLImageElement;
     expect(img).toBeInTheDocument();
-    expect(img.getAttribute('src')).toBe('/favicon.ico');
+    expect(img.getAttribute('src')).toBe('/src/app/favicon.ico');
   });
 
   it('4. Confirms no reconstructed SVG logo mark exists in DOM', () => {
@@ -37,11 +37,8 @@ describe('SignalFold — Brand Assets & Components Tests', () => {
     render(<BrandLogo />);
     const img = screen.getByAltText('SignalFold') as HTMLImageElement;
     const src = img.getAttribute('src');
-    expect(src).toBeDefined();
-    // Path must be root-absolute, i.e., start with "/", "http", or "data:"
-    const isAbsolute = src && (src.startsWith('/') || src.startsWith('http') || src.startsWith('data:'));
-    expect(isAbsolute).toBe(true);
-    // Path must not be route-relative (like starting with "SignalFold-logo.png" or "./")
+    expect(src).toBe('/SignalFold-logo.png');
+    expect(src?.startsWith('/')).toBe(true);
     expect(src?.startsWith('SignalFold-logo.png')).toBe(false);
     expect(src?.startsWith('./')).toBe(false);
   });
@@ -55,8 +52,10 @@ describe('SignalFold — Brand Assets & Components Tests', () => {
   });
 
   it('7. Brand image file asset-integrity test: matches PNG raw byte signature', () => {
-    const assetPath = path.resolve(__dirname, '../assets/brand/SignalFold-logo.png');
+    const assetPath = path.resolve(__dirname, '../../public/SignalFold-logo.png');
+    const obsoleteRootPath = path.resolve(__dirname, '../../SignalFold-logo.png');
     expect(fs.existsSync(assetPath)).toBe(true);
+    expect(fs.existsSync(obsoleteRootPath)).toBe(false);
 
     const bytes = fs.readFileSync(assetPath);
     expect(bytes.length).toBeGreaterThan(0);

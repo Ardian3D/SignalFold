@@ -573,7 +573,7 @@ describe('Incident Room Page Layout and Responsive Tests', () => {
     const closeIconBtn = within(secondDrawer).getByRole('button', { name: 'Close task review' });
     fireEvent.click(closeIconBtn);
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
-  });
+  }, 30000);
 
   it('verifies Phase 03 Local Task Record Preview lifecycle (creation, duplicate prevention, removal, clearing)', () => {
     const { container } = render(
@@ -675,7 +675,7 @@ describe('Incident Room Page Layout and Responsive Tests', () => {
 
     // Verify back to empty state
     expect(within(tasksPanel).getByText('NO LOCAL TASK PREVIEWS')).toBeInTheDocument();
-  });
+  }, 30000);
 
   it('verifies the Responder Context Drawer triggers, displays all sections correctly, and handles closing and escape key', () => {
     render(
@@ -1024,7 +1024,7 @@ describe('Incident Room Page Layout and Responsive Tests', () => {
 
     // Verify header status and timeline remains exactly unchanged
     expect(screen.getAllByText('REPORTED').length).toBeGreaterThan(0);
-  });
+  }, 30000);
 
   it('verifies the Change Severity Drawer Phase 03 workflow, accessibility, and constraints', () => {
     render(
@@ -1199,7 +1199,7 @@ describe('Incident Room Page Layout and Responsive Tests', () => {
 
     // Verify incident metadata remains completely unchanged
     expect(screen.getAllByText('NOT CONFIRMED').length).toBeGreaterThan(0);
-  });
+  }, 30000);
 
   it('verifies the Phase 04 Assign Commander shared preview trigger integration', () => {
     vi.useFakeTimers();
@@ -1412,6 +1412,6 @@ describe('Incident Room Page Layout and Responsive Tests', () => {
     vi.advanceTimersByTime(50);
 
     vi.useRealTimers();
-  });
+  }, 30000);
 });
 

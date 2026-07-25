@@ -3,6 +3,21 @@
 
 This document outlines the authoritative blueprint for transitioning **SignalFold** from its highly validated, responsive Frontend Phase (Phase 1) to the backend implementation phase.
 
+## 00 / Backend Phase 01B Foundation Progress
+
+The Phase 01B foundation is established with a basic backend-only Base44 project and `@base44/sdk` runtime boundary.
+
+- **CLI:** Base44 CLI `0.1.5`, invoked through `npx base44@latest`.
+- **SDK:** `@base44/sdk@0.8.40`.
+- **Configuration:** `base44/config.jsonc`, with site output configured as `./dist`; developer app metadata remains ignored in `base44/.app.jsonc`.
+- **Integration boundary:** `src/integrations/base44/config.ts`, `client.ts`, and `index.ts`.
+- **Environment:** `VITE_DATA_MODE` defaults to `mock`; optional public Base44 settings are documented in `.env.example`.
+- **Safety boundary:** The SDK client is lazy, mock mode does not instantiate it, and missing configuration is non-fatal.
+- **Not implemented:** Authentication, entities, functions, realtime, persistence, seed data, and DeepSeek integration.
+- **Deployment:** No Base44 deployment occurred.
+
+The next phase is authentication and session foundation.
+
 ---
 
 ## 01 / Frontend Freeze Status
