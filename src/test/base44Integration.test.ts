@@ -1,3 +1,6 @@
+import { readFileSync } from 'node:fs';
+import { resolve } from 'node:path';
+
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import {
@@ -113,7 +116,7 @@ describe('Base44 lazy client boundary', () => {
     expect(first).not.toBeNull();
     expect(second).toBe(first);
     expect(createClientMock).toHaveBeenCalledTimes(1);
-    expect(createClientMock).toHaveBeenCalledWith({ appId: 'app_123', appBaseUrl: 'https://base44.app' });
+    expect(createClientMock).toHaveBeenCalledWith({ appId: 'app_123' });
   });
 
   it('passes the local server URL only for explicit local development', () => {
@@ -124,7 +127,14 @@ describe('Base44 lazy client boundary', () => {
       localServerUrl: 'http://localhost:4400',
     }), { dev: true });
     getBase44Client(config);
-    expect(createClientMock).toHaveBeenCalledWith({ appId: 'app_123', appBaseUrl: 'http://localhost:4400', serverUrl: 'http://localhost:4400' });
+    expect(createClientMock).toHaveBeenCalledWith({ appId: 'app_123', serverUrl: 'http://localhost:4400' });
+  });
+
+  it('never overrides the hosted app base URL or uses the frontend origin as the SDK server', () => {
+    const source = readFileSync(resolve(process.cwd(), 'src/integrations/base44/client.ts'), 'utf8');
+    expect(source).not.toContain('appBaseUrl');
+    expect(source).not.toContain('https://base44.app');
+    expect(source).not.toContain('localhost:3000');
   });
 
   it('does not invoke auth, entities, functions, realtime, or network operations', () => {

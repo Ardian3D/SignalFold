@@ -78,10 +78,11 @@ Phase 02D remains blocked until external live-auth and browser visual verificati
 
 ## 00E / Backend Phase 02C.2 Auth Redirect and Verification Layout Hardening
 
-- **Hosted auth redirects:** The SDK client now supplies Base44's hosted `appBaseUrl` while leaving hosted `serverUrl` at the SDK default. This prevents Google and logout redirects from becoming relative `/api/apps/auth/*` routes on the Vite origin.
+- **Hosted auth redirects:** The external SDK client uses only `appId` in hosted mode. It does not override `appBaseUrl`, so Base44-hosted SignalFold uses the SDK's native same-origin `/api/apps/auth/*` routes.
 - **Local Base44 development:** A local server URL is accepted only when Base44 mode, explicit local development, development mode, and the exact `http://localhost:4400` origin are all present.
-- **Google and logout:** Provider initiation remains `loginWithProvider('google', safePath)`. Logout clears local state first and delegates the single SDK redirect to a same-origin `/login` return destination; mock logout remains unchanged.
-- **Verify Email:** The verification page now uses stable full-width responsive constraints matching the existing authentication family, including usable OTP and action controls.
+- **Google and logout:** Redirect-based Google OAuth and SDK logout are blocked on localhost because those same-origin routes belong to Base44 hosting. On a deployed origin, provider initiation remains `loginWithProvider('google', safePath)` and logout delegates once to `logout('/login')`. Mock logout remains unchanged.
+- **Verify Email:** Login, Signup, and Verify Email now render through the shared authentication shell. Verify Email also uses shared main-layout and form-card primitives, including full-width OTP and responsive action controls.
+- **Runtime verification:** A site-only Base44 deployment is still pending explicit approval. No full Base44 deployment or backend-resource deployment has occurred.
 - **Scope:** No Organization, Membership, tenant authorization, entities, functions, realtime, or DeepSeek integration was added.
 
 ---

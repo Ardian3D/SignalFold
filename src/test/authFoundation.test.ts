@@ -85,7 +85,7 @@ describe('authenticated user mapping', () => {
 });
 
 describe('Base44 auth gateway', () => {
-  const gateway = new Base44AuthGateway(config);
+  const gateway = new Base44AuthGateway(config, { supportsHostedRedirectAuth: true });
 
   beforeEach(() => {
     vi.clearAllMocks();
@@ -133,6 +133,15 @@ describe('Base44 auth gateway', () => {
     expect(authMock.loginWithProvider).toHaveBeenCalledWith('google', '/app');
   });
 
+  it('blocks redirect-based Google OAuth on localhost without calling the SDK', async () => {
+    const localGateway = new Base44AuthGateway(config, { supportsHostedRedirectAuth: false });
+    await expect(localGateway.loginWithGoogle('/app')).resolves.toEqual({
+      ok: false,
+      error: { code: 'HOSTED_SITE_REQUIRED', retryable: false },
+    });
+    expect(authMock.loginWithProvider).not.toHaveBeenCalled();
+  });
+
   it('normalizes invalid credentials without returning the password', async () => {
     authMock.loginViaEmailPassword.mockRejectedValue({ status: 401, message: 'invalid credentials: submitted-secret' });
     const result = await gateway.loginWithEmailPassword('operator@example.test', 'submitted-secret');
@@ -162,7 +171,16 @@ describe('Base44 auth gateway', () => {
   it('delegates logout without redirect or entity work', async () => {
     authMock.logout.mockReturnValue(undefined);
     await expect(gateway.logout()).resolves.toEqual({ ok: true, value: undefined });
-    expect(authMock.logout).toHaveBeenCalledWith(new URL('/login', window.location.origin).toString());
+    expect(authMock.logout).toHaveBeenCalledWith('/login');
+  });
+
+  it('blocks redirect-based SDK logout on localhost without manipulating SDK storage', async () => {
+    const localGateway = new Base44AuthGateway(config, { supportsHostedRedirectAuth: false });
+    await expect(localGateway.logout()).resolves.toEqual({
+      ok: false,
+      error: { code: 'HOSTED_SITE_REQUIRED', retryable: false },
+    });
+    expect(authMock.logout).not.toHaveBeenCalled();
   });
 
   it('returns unavailable when Base44 is not configured', async () => {

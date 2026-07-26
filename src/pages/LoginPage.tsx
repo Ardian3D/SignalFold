@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { BrandLogo } from '@/components/brand/BrandLogo';
 import { GoogleAuthButton } from '@/components/auth/GoogleAuthButton';
+import { AuthPageShell } from '@/components/auth/AuthPageShell';
 import { Eye, EyeOff } from 'lucide-react';
 import { useAuth } from '@/features/auth/AuthProvider';
 import { getSafeReturnPath } from '@/features/auth/routing/returnPath';
@@ -11,6 +12,7 @@ const authMessage = (code: string): string => {
   if (code === 'NETWORK_ERROR' || code === 'AUTH_SERVICE_UNAVAILABLE') return 'AUTHENTICATION SERVICE UNAVAILABLE\nTry again when connectivity is restored.';
   if (code === 'GOOGLE_AUTH_CANCELLED') return 'GOOGLE AUTHENTICATION CANCELLED\nNo account changes were made.';
   if (code === 'GOOGLE_AUTH_FAILED') return 'GOOGLE AUTHENTICATION FAILED\nTry again or continue with email.';
+  if (code === 'HOSTED_SITE_REQUIRED') return 'GOOGLE OAUTH REQUIRES THE DEPLOYED SIGNALFOLD SITE.';
   return 'AUTHENTICATION ERROR\nThe authentication service could not complete the request.';
 };
 
@@ -143,7 +145,7 @@ export function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen bg-[#0A0A0A] text-[#F3F1EA] flex flex-col justify-between selection:bg-[#D6FF3F] selection:text-[#0A0A0A] relative overflow-x-hidden p-4 sm:p-6 lg:p-8">
+    <AuthPageShell>
       {/* Background Subtle Tech Grid (Aria-Hidden) */}
       <div
         className="absolute inset-0 bg-[linear-gradient(to_right,#141513_1px,transparent_1px),linear-gradient(to_bottom,#141513_1px,transparent_1px)] bg-[size:32px_32px] opacity-10 pointer-events-none"
@@ -437,6 +439,6 @@ export function LoginPage() {
           <span className="w-1.5 h-1.5 rounded-full bg-amber-500" aria-hidden="true" />
         </div>
       </footer>
-    </div>
+    </AuthPageShell>
   );
 }

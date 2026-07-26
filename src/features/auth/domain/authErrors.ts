@@ -11,6 +11,7 @@ export type AuthErrorCode =
   | 'GOOGLE_AUTH_CANCELLED'
   | 'GOOGLE_AUTH_FAILED'
   | 'AUTH_UNAVAILABLE'
+  | 'HOSTED_SITE_REQUIRED'
   | 'UNKNOWN_AUTH_ERROR';
 
 export type AuthError = {
@@ -80,5 +81,10 @@ export function normalizeAuthError(error: unknown, fallback: AuthErrorCode = 'UN
 
 export const unavailableAuthError = (): AuthError => ({
   code: 'AUTH_UNAVAILABLE',
+  retryable: false,
+});
+
+export const hostedSiteRequiredAuthError = (): AuthError => ({
+  code: 'HOSTED_SITE_REQUIRED',
   retryable: false,
 });

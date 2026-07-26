@@ -3,10 +3,11 @@ import type { AuthModule, User as Base44User } from '@base44/sdk';
 import { getBase44Client } from '@/integrations/base44/client';
 import type { Base44RuntimeConfig } from '@/integrations/base44/config';
 
-import { normalizeAuthError, unavailableAuthError } from '../domain/authErrors';
+import { hostedSiteRequiredAuthError, normalizeAuthError, unavailableAuthError } from '../domain/authErrors';
 import type { AuthGateway } from '../ports/AuthGateway';
 import type { AuthResult, AuthSession, AuthenticatedUser, RegistrationResult } from '../domain/authTypes';
 import { getSafeReturnPath } from '../routing/returnPath';
+import { getRedirectAuthRuntime, type RedirectAuthRuntime } from '../runtime/redirectAuthRuntime';
 
 const success = <T>(value: T): AuthResult<T> => ({ ok: true, value });
 const failure = <T>(): AuthResult<T> => ({ ok: false, error: unavailableAuthError() });
@@ -26,7 +27,10 @@ const getAuthModule = (config: Base44RuntimeConfig): AuthResult<AuthModule> => {
 };
 
 export class Base44AuthGateway implements AuthGateway {
-  public constructor(private readonly config: Base44RuntimeConfig) {}
+  public constructor(
+    private readonly config: Base44RuntimeConfig,
+    private readonly redirectRuntime: RedirectAuthRuntime = getRedirectAuthRuntime(),
+  ) {}
 
   public async restoreSession(): Promise<AuthResult<AuthSession>> {
     const auth = getAuthModule(this.config);
@@ -71,6 +75,9 @@ export class Base44AuthGateway implements AuthGateway {
   }
 
   public async loginWithGoogle(returnPath: string): Promise<AuthResult<void>> {
+    if (!this.redirectRuntime.supportsHostedRedirectAuth) {
+      return { ok: false, error: hostedSiteRequiredAuthError() };
+    }
     const auth = getAuthModule(this.config);
     if (!auth.ok) return auth;
 
@@ -107,12 +114,14 @@ export class Base44AuthGateway implements AuthGateway {
   }
 
   public async logout(): Promise<AuthResult<void>> {
+    if (!this.redirectRuntime.supportsHostedRedirectAuth) {
+      return { ok: false, error: hostedSiteRequiredAuthError() };
+    }
     const auth = getAuthModule(this.config);
     if (!auth.ok) return auth;
 
     try {
-      const returnUrl = typeof window === 'undefined' ? '/login' : new URL('/login', window.location.origin).toString();
-      auth.value.logout(returnUrl);
+      auth.value.logout('/login');
       return success(undefined);
     } catch (error) {
       return { ok: false, error: normalizeAuthError(error) };

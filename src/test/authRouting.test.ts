@@ -26,12 +26,11 @@ describe('safe authentication return paths', () => {
     }
   });
 
-  it('keeps the verification form width-constrained and responsive', () => {
+  it('builds verification through the shared authentication layout primitives', () => {
     const source = readFileSync(resolve(process.cwd(), 'src/pages/VerifyEmailPage.tsx'), 'utf8');
-    expect(source).toContain('w-full max-w-lg min-w-0');
-    expect(source).toContain('w-full flex-1 flex items-center justify-center');
-    expect(source).toContain('grid grid-cols-2 gap-3');
-    expect(source).toContain('inline-flex whitespace-nowrap');
-    expect(source).not.toContain('w-fit');
+    expect(source).toMatch(/import\s+\{[^}]*AuthFormCard[^}]*AuthPageMain[^}]*AuthPageShell[^}]*\}\s+from\s+['"]@\/components\/auth\/AuthPageShell['"]/s);
+    expect(source).toContain('<AuthPageShell>');
+    expect(source).toContain('<AuthPageMain>');
+    expect(source).toContain('<AuthFormCard>');
   });
 });
