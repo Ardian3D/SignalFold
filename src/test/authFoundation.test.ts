@@ -127,6 +127,12 @@ describe('Base44 auth gateway', () => {
     expect(authMock.loginWithProvider).toHaveBeenCalledWith('google', '/app/incidents');
   });
 
+  it('rejects an unsafe Google return path before provider initiation', async () => {
+    authMock.loginWithProvider.mockReturnValue(undefined);
+    await gateway.loginWithGoogle('https://example.invalid/account');
+    expect(authMock.loginWithProvider).toHaveBeenCalledWith('google', '/app');
+  });
+
   it('normalizes invalid credentials without returning the password', async () => {
     authMock.loginViaEmailPassword.mockRejectedValue({ status: 401, message: 'invalid credentials: submitted-secret' });
     const result = await gateway.loginWithEmailPassword('operator@example.test', 'submitted-secret');
@@ -156,7 +162,7 @@ describe('Base44 auth gateway', () => {
   it('delegates logout without redirect or entity work', async () => {
     authMock.logout.mockReturnValue(undefined);
     await expect(gateway.logout()).resolves.toEqual({ ok: true, value: undefined });
-    expect(authMock.logout).toHaveBeenCalledWith();
+    expect(authMock.logout).toHaveBeenCalledWith(new URL('/login', window.location.origin).toString());
   });
 
   it('returns unavailable when Base44 is not configured', async () => {

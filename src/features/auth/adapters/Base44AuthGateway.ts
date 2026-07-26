@@ -6,6 +6,7 @@ import type { Base44RuntimeConfig } from '@/integrations/base44/config';
 import { normalizeAuthError, unavailableAuthError } from '../domain/authErrors';
 import type { AuthGateway } from '../ports/AuthGateway';
 import type { AuthResult, AuthSession, AuthenticatedUser, RegistrationResult } from '../domain/authTypes';
+import { getSafeReturnPath } from '../routing/returnPath';
 
 const success = <T>(value: T): AuthResult<T> => ({ ok: true, value });
 const failure = <T>(): AuthResult<T> => ({ ok: false, error: unavailableAuthError() });
@@ -74,7 +75,7 @@ export class Base44AuthGateway implements AuthGateway {
     if (!auth.ok) return auth;
 
     try {
-      auth.value.loginWithProvider('google', returnPath);
+      auth.value.loginWithProvider('google', getSafeReturnPath(returnPath));
       return success(undefined);
     } catch (error) {
       return { ok: false, error: normalizeAuthError(error) };
@@ -110,7 +111,8 @@ export class Base44AuthGateway implements AuthGateway {
     if (!auth.ok) return auth;
 
     try {
-      auth.value.logout();
+      const returnUrl = typeof window === 'undefined' ? '/login' : new URL('/login', window.location.origin).toString();
+      auth.value.logout(returnUrl);
       return success(undefined);
     } catch (error) {
       return { ok: false, error: normalizeAuthError(error) };

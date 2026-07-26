@@ -47,8 +47,8 @@ function AppShellContent({ children }: AppShellProps) {
   const handleLogout = async () => {
     if (isLoggingOut) return;
     setIsLoggingOut(true);
-    await logout();
-    navigate('/login', { replace: true });
+    const result = await logout();
+    if (isMockMode || !result.ok) navigate('/login', { replace: true });
   };
 
   // Set page title for the SignalFold App

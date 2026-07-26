@@ -76,6 +76,14 @@ The next phase is session completion and onboarding boundary work.
 
 Phase 02D remains blocked until external live-auth and browser visual verification are completed.
 
+## 00E / Backend Phase 02C.2 Auth Redirect and Verification Layout Hardening
+
+- **Hosted auth redirects:** The SDK client now supplies Base44's hosted `appBaseUrl` while leaving hosted `serverUrl` at the SDK default. This prevents Google and logout redirects from becoming relative `/api/apps/auth/*` routes on the Vite origin.
+- **Local Base44 development:** A local server URL is accepted only when Base44 mode, explicit local development, development mode, and the exact `http://localhost:4400` origin are all present.
+- **Google and logout:** Provider initiation remains `loginWithProvider('google', safePath)`. Logout clears local state first and delegates the single SDK redirect to a same-origin `/login` return destination; mock logout remains unchanged.
+- **Verify Email:** The verification page now uses stable full-width responsive constraints matching the existing authentication family, including usable OTP and action controls.
+- **Scope:** No Organization, Membership, tenant authorization, entities, functions, realtime, or DeepSeek integration was added.
+
 ---
 
 ## 01 / Frontend Freeze Status

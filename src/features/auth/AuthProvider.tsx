@@ -84,8 +84,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const resendVerificationOtp = useCallback((email: string) => gateway.resendVerificationOtp(email), [gateway]);
   const loginWithGoogle = useCallback((returnPath: string) => gateway.loginWithGoogle(returnPath), [gateway]);
   const logout = useCallback(async () => {
-    const result = await gateway.logout();
     setState(applyLogout());
+    const result = await gateway.logout();
     return result;
   }, [gateway]);
   const clearError = useCallback(() => setState((current) => current.status === 'ERROR' ? { status: 'UNAUTHENTICATED', user: null, error: null } : current), []);
