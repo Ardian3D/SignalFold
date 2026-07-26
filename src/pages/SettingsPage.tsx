@@ -2,8 +2,12 @@ import { useSearchParams, useNavigate } from 'react-router-dom';
 import { useFeedbackState } from '@/context/FeedbackStateContext';
 import { RouteFeedbackState } from '@/components/feedback/RouteFeedbackState';
 import { Settings, Lock, HelpCircle, AlertTriangle, Bell, Shield, Database, Eye, CheckCircle } from 'lucide-react';
+import { Base44SettingsBoundary } from '@/features/organization/OrganizationReadBoundaries';
+import { useOrganization } from '@/features/organization/OrganizationProvider';
 
 export function SettingsPage() {
+  const { isMockMode } = useOrganization();
+  if (!isMockMode) return <Base44SettingsBoundary />;
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const { getFeedbackState } = useFeedbackState();

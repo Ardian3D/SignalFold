@@ -8,6 +8,8 @@ import { SystemConnectivityBanner } from '@/components/feedback/SystemConnectivi
 import { FeedbackStateProvider } from '@/context/FeedbackStateContext';
 import { RouteErrorBoundary } from '@/components/feedback/RouteErrorBoundary';
 import { useAuth } from '@/features/auth/AuthProvider';
+import { useOrganization } from '@/features/organization/OrganizationProvider';
+import { getAppRouteTitle } from './appRouteTitle';
 
 interface AppShellProps {
   children: ReactNode;
@@ -35,6 +37,16 @@ function AppShellContent({ children }: AppShellProps) {
   const location = useLocation();
   const navigate = useNavigate();
   const { isMockMode, user, logout } = useAuth();
+  const { context } = useOrganization();
+  const organizationName = isMockMode ? 'NORTHSTAR COMMERCE' : context?.organization.name ?? 'ORGANIZATION NOT RESOLVED';
+  // Phase 02D compatibility marker: Base44 mode remains unresolved until Membership is authoritative.
+  const phase02OrganizationBoundary = isMockMode ? 'NORTHSTAR COMMERCE' : 'ORGANIZATION NOT RESOLVED';
+  const roleLabel = context?.membership.role === 'admin' ? 'ORGANIZATION ADMIN' : context?.membership.role === 'incident_manager' ? 'INCIDENT MANAGER' : context?.membership.role === 'responder' ? 'RESPONDER' : context?.membership.role === 'reporter' ? 'REPORTER' : null;
+  const hasActiveOrganization = !isMockMode && context?.membership.status === 'active';
+  const workspaceModeLabel = hasActiveOrganization ? 'LIVE WORKSPACE' : 'FRONTEND PREVIEW';
+  const dataSourceLabel = hasActiveOrganization ? 'BASE44' : 'MOCK MODE';
+  const authorityLabel = hasActiveOrganization ? 'MEMBERSHIP ACTIVE' : 'BACKEND PENDING';
+  const routeTitle = getAppRouteTitle(location.pathname);
   const [isLoggingOut, setIsLoggingOut] = useState(false);
   const isIncidentsActive = location.pathname === '/app/incidents' || location.pathname === '/app/incidents/SF-2026-0042';
   const isIncidentsNewActive = location.pathname === '/app/incidents/new';
@@ -106,7 +118,7 @@ function AppShellContent({ children }: AppShellProps) {
         <div className="flex items-center gap-2">
           <div className="flex items-center gap-1 border border-amber-500/20 bg-amber-500/5 px-1.5 py-0.5 text-[8px] font-mono font-bold tracking-wider text-amber-500 rounded-[2px]" style={{ fontFamily: 'var(--font-technical)' }}>
             <span className="w-1 h-1 rounded-full bg-amber-500 animate-pulse" />
-            <span>PREVIEW</span>
+            <span>{hasActiveOrganization ? 'LIVE' : 'PREVIEW'}</span>
           </div>
           
           <button
@@ -144,11 +156,11 @@ function AppShellContent({ children }: AppShellProps) {
           <div className="p-3 bg-[#141513]/40 border border-[#242522] space-y-2 rounded-[2px]" aria-label="Workspace Context">
             <div>
               <div className="text-[9px] font-mono text-[#5C5E58] tracking-widest uppercase" style={{ fontFamily: 'var(--font-technical)' }}>ORGANIZATION</div>
-              <div className="text-[11px] font-mono font-bold text-[#F3F1EA] tracking-wide" style={{ fontFamily: 'var(--font-technical)' }}>{isMockMode ? 'NORTHSTAR COMMERCE' : 'ORGANIZATION NOT RESOLVED'}</div>
+              <div className="text-[11px] font-mono font-bold text-[#F3F1EA] tracking-wide" style={{ fontFamily: 'var(--font-technical)' }}>{organizationName}</div>
             </div>
             <div>
               <div className="text-[9px] font-mono text-[#5C5E58] tracking-widest uppercase" style={{ fontFamily: 'var(--font-technical)' }}>MODE</div>
-              <div className="text-[11px] font-mono font-bold text-[#D6FF3F] tracking-wide" style={{ fontFamily: 'var(--font-technical)' }}>FRONTEND PREVIEW</div>
+              <div className="text-[11px] font-mono font-bold text-[#D6FF3F] tracking-wide" style={{ fontFamily: 'var(--font-technical)' }}>{workspaceModeLabel}</div>
             </div>
           </div>
 
@@ -226,7 +238,7 @@ function AppShellContent({ children }: AppShellProps) {
                 <span className="flex items-center gap-2">
                   SERVICES
                 </span>
-                <span className="text-[9px] tracking-wider uppercase text-[#A8AAA3] border border-[#242522]/60 px-1 py-0.5 bg-[#141513]/20">PREVIEW</span>
+                <span className="text-[9px] tracking-wider uppercase text-[#A8AAA3] border border-[#242522]/60 px-1 py-0.5 bg-[#141513]/20">{hasActiveOrganization ? 'READ ONLY' : 'PREVIEW'}</span>
               </Link>
             )}
 
@@ -252,7 +264,7 @@ function AppShellContent({ children }: AppShellProps) {
                 <span className="flex items-center gap-2">
                   TEAM
                 </span>
-                <span className="text-[9px] tracking-wider uppercase text-[#A8AAA3] border border-[#242522]/60 px-1 py-0.5 bg-[#141513]/20">PREVIEW</span>
+                <span className="text-[9px] tracking-wider uppercase text-[#A8AAA3] border border-[#242522]/60 px-1 py-0.5 bg-[#141513]/20">{hasActiveOrganization ? 'READ ONLY' : 'PREVIEW'}</span>
               </Link>
             )}
           </nav>
@@ -286,7 +298,7 @@ function AppShellContent({ children }: AppShellProps) {
               <span className="flex items-center gap-2">
                 SETTINGS
               </span>
-              <span className="text-[9px] tracking-wider uppercase text-[#A8AAA3] border border-[#242522]/60 px-1 py-0.5 bg-[#141513]/20">PREVIEW</span>
+              <span className="text-[9px] tracking-wider uppercase text-[#A8AAA3] border border-[#242522]/60 px-1 py-0.5 bg-[#141513]/20">{hasActiveOrganization ? 'READ ONLY' : 'PREVIEW'}</span>
             </Link>
           )}
 
@@ -322,11 +334,11 @@ function AppShellContent({ children }: AppShellProps) {
             </div>
             <div className="flex justify-between items-center text-[9px] font-mono tracking-wide">
               <span className="text-[#5C5E58]">DATA SOURCE</span>
-              <span className="text-[#A8AAA3] font-bold">MOCK MODE</span>
+              <span className="text-[#A8AAA3] font-bold">{dataSourceLabel}</span>
             </div>
             <div className="flex justify-between items-center text-[9px] font-mono tracking-wide">
               <span className="text-[#5C5E58]">AUTHORITY</span>
-              <span className="text-amber-500 font-bold">BACKEND PENDING</span>
+              <span className="text-amber-500 font-bold">{authorityLabel}</span>
             </div>
           </div>
         </div>
@@ -359,11 +371,11 @@ function AppShellContent({ children }: AppShellProps) {
             <div className="p-3 bg-[#141513]/40 border border-[#242522] space-y-1.5 rounded-[2px]" aria-label="Mobile Workspace Context">
               <div>
                 <div className="text-[9px] font-mono text-[#5C5E58] tracking-widest uppercase" style={{ fontFamily: 'var(--font-technical)' }}>ORGANIZATION</div>
-                <div className="text-[10px] font-mono font-bold text-[#F3F1EA] tracking-wide" style={{ fontFamily: 'var(--font-technical)' }}>{isMockMode ? 'NORTHSTAR COMMERCE' : 'ORGANIZATION NOT RESOLVED'}</div>
+                <div className="text-[10px] font-mono font-bold text-[#F3F1EA] tracking-wide" style={{ fontFamily: 'var(--font-technical)' }}>{organizationName}</div>
               </div>
               <div>
                 <div className="text-[9px] font-mono text-[#5C5E58] tracking-widest uppercase" style={{ fontFamily: 'var(--font-technical)' }}>MODE</div>
-                <div className="text-[10px] font-mono font-bold text-[#D6FF3F] tracking-wide" style={{ fontFamily: 'var(--font-technical)' }}>FRONTEND PREVIEW</div>
+                <div className="text-[10px] font-mono font-bold text-[#D6FF3F] tracking-wide" style={{ fontFamily: 'var(--font-technical)' }}>{workspaceModeLabel}</div>
               </div>
             </div>
 
@@ -447,7 +459,7 @@ function AppShellContent({ children }: AppShellProps) {
                     <span className="flex items-center gap-2">
                       SERVICES
                     </span>
-                    <span className="text-[9px] tracking-wider uppercase text-[#A8AAA3] border border-[#242522]/60 px-1 py-0.5 bg-[#141513]/20">PREVIEW</span>
+                    <span className="text-[9px] tracking-wider uppercase text-[#A8AAA3] border border-[#242522]/60 px-1 py-0.5 bg-[#141513]/20">{hasActiveOrganization ? 'READ ONLY' : 'PREVIEW'}</span>
                   </Link>
                 )}
 
@@ -475,7 +487,7 @@ function AppShellContent({ children }: AppShellProps) {
                     <span className="flex items-center gap-2">
                       TEAM
                     </span>
-                    <span className="text-[9px] tracking-wider uppercase text-[#A8AAA3] border border-[#242522]/60 px-1 py-0.5 bg-[#141513]/20">PREVIEW</span>
+                    <span className="text-[9px] tracking-wider uppercase text-[#A8AAA3] border border-[#242522]/60 px-1 py-0.5 bg-[#141513]/20">{hasActiveOrganization ? 'READ ONLY' : 'PREVIEW'}</span>
                   </Link>
                 )}
 
@@ -503,7 +515,7 @@ function AppShellContent({ children }: AppShellProps) {
                     <span className="flex items-center gap-2">
                       SETTINGS
                     </span>
-                    <span className="text-[9px] tracking-wider uppercase text-[#A8AAA3] border border-[#242522]/60 px-1 py-0.5 bg-[#141513]/20">PREVIEW</span>
+                    <span className="text-[9px] tracking-wider uppercase text-[#A8AAA3] border border-[#242522]/60 px-1 py-0.5 bg-[#141513]/20">{hasActiveOrganization ? 'READ ONLY' : 'PREVIEW'}</span>
                   </Link>
                 )}
               </div>
@@ -541,11 +553,11 @@ function AppShellContent({ children }: AppShellProps) {
                   </div>
                   <div className="flex justify-between items-center text-[8px] font-mono tracking-wide">
                     <span className="text-[#5C5E58]">DATA SOURCE</span>
-                    <span className="text-[#A8AAA3] font-bold">MOCK MODE</span>
+                    <span className="text-[#A8AAA3] font-bold">{dataSourceLabel}</span>
                   </div>
                   <div className="flex justify-between items-center text-[8px] font-mono tracking-wide">
                     <span className="text-[#5C5E58]">AUTHORITY</span>
-                    <span className="text-amber-500 font-bold">BACKEND PENDING</span>
+                    <span className="text-amber-500 font-bold">{authorityLabel}</span>
                   </div>
                 </div>
               </div>
@@ -562,7 +574,7 @@ function AppShellContent({ children }: AppShellProps) {
           {/* Breadcrumbs (Technical / IBM Plex Mono) */}
           <div className="flex flex-col items-start text-left">
             <nav aria-label="Breadcrumb" className="font-mono text-[9px] sm:text-[10px] tracking-widest text-[#5C5E58] uppercase flex items-center gap-1" style={{ fontFamily: 'var(--font-technical)' }}>
-              <span>NORTHSTAR COMMERCE</span>
+              <span>{organizationName}</span>
               <span className="text-[#242522]" aria-hidden="true">/</span>
               {isIncidentRoomActive ? (
                 <>
@@ -589,7 +601,7 @@ function AppShellContent({ children }: AppShellProps) {
               )}
             </nav>
             <h1 className="text-xs font-mono font-bold tracking-wider text-[#F3F1EA] uppercase mt-0.5" style={{ fontFamily: 'var(--font-technical)' }}>
-              {isIncidentRoomActive ? 'INCIDENT ROOM' : isIncidentsNewActive ? 'NEW INCIDENT' : isIncidentsActive ? 'INCIDENTS' : isServicesActive ? 'SERVICE CATALOG' : isTeamActive ? 'TEAM & MEMBERSHIP' : 'DASHBOARD'}
+              {routeTitle}
             </h1>
           </div>
 
@@ -608,7 +620,7 @@ function AppShellContent({ children }: AppShellProps) {
             {/* Operational Workspace Status (Amber Pending Styling) */}
             <div className="flex items-center gap-1.5 border border-amber-500/20 bg-amber-500/5 px-2.5 py-1 text-[9px] sm:text-[10px] font-mono font-bold tracking-wider text-amber-500 rounded-[2px]" style={{ fontFamily: 'var(--font-technical)' }}>
               <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse" aria-hidden="true" />
-              <span>WORKSPACE / PREVIEW MODE</span>
+              <span>{hasActiveOrganization ? 'WORKSPACE / LIVE' : 'WORKSPACE / PREVIEW MODE'}</span>
             </div>
 
             {/* Notifications Indicator (Disabled, No fake counts) */}
@@ -629,7 +641,7 @@ function AppShellContent({ children }: AppShellProps) {
               aria-label="Current Operator Info"
             >
               <User className="w-3.5 h-3.5 text-[#5C5E58]" aria-hidden="true" />
-              <span className="hidden sm:inline">{isMockMode ? 'OPERATOR_01' : user?.displayName ?? user?.email ?? 'AUTHENTICATED USER'}</span>
+              <span className="hidden sm:inline">{isMockMode ? 'OPERATOR_01' : user?.displayName ?? user?.email ?? 'AUTHENTICATED USER'}{!isMockMode && roleLabel ? ` / ${roleLabel}` : ''}</span>
               <span className="w-1.5 h-1.5 rounded-full bg-amber-500/80" title="Preview connection" />
             </div>
             {!isMockMode && (
@@ -643,7 +655,7 @@ function AppShellContent({ children }: AppShellProps) {
         <SystemConnectivityBanner />
 
         {/* MAIN WORKSPACE CANVAS CONTAINER */}
-        <main id="main-content" className="flex-1 p-4 sm:p-6 lg:p-8 max-w-7xl w-full mx-auto pb-24 lg:pb-12 text-left">
+        <main id="main-content" className="flex-1 min-w-0 p-4 sm:p-6 lg:p-8 max-w-7xl w-full mx-auto pb-24 lg:pb-12 text-left">
           <RouteErrorBoundary>
             {children}
           </RouteErrorBoundary>

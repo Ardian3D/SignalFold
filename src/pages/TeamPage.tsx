@@ -2,8 +2,12 @@ import { useSearchParams, useNavigate } from 'react-router-dom';
 import { useFeedbackState } from '@/context/FeedbackStateContext';
 import { RouteFeedbackState } from '@/components/feedback/RouteFeedbackState';
 import { Users, Lock, ExternalLink, HelpCircle, UserPlus, ShieldAlert } from 'lucide-react';
+import { Base44TeamBoundary } from '@/features/organization/OrganizationReadBoundaries';
+import { useOrganization } from '@/features/organization/OrganizationProvider';
 
 export function TeamPage() {
+  const { isMockMode } = useOrganization();
+  if (!isMockMode) return <Base44TeamBoundary />;
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const { getFeedbackState } = useFeedbackState();

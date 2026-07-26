@@ -1,0 +1,5 @@
+import type { OrganizationGateway, OnboardingInput, OrganizationResolution } from '../ports/OrganizationGateway';
+import type { SafeOrganizationMember } from '../domain/organizationTypes';
+const context = { organization: { id: 'mock-northstar', name: 'NORTHSTAR COMMERCE', slug: 'northstar-commerce', defaultTimezone: 'UTC', incidentPrefix: 'SF', publicStatusEnabled: false, createdByUserId: 'mock-user', isDemo: true }, membership: { id: 'mock-membership', organizationId: 'mock-northstar', userId: 'mock-user', role: 'admin' as const, status: 'active' as const } };
+export class MockOrganizationGateway implements OrganizationGateway { async resolveCurrentOrganizationContext(): Promise<OrganizationResolution> { return { state: 'ACTIVE', context, selectable: [] }; } async completeOrganizationOnboarding(_input: OnboardingInput) { return { state: 'ACTIVE' as const, context, selectable: [] }; } async selectActiveOrganization(_id: string) { return { state: 'ACTIVE' as const, context, selectable: [] }; } async listActiveOrganizationMembers(): Promise<SafeOrganizationMember[]> { return []; } }
+

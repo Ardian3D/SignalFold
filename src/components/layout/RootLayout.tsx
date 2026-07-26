@@ -1,6 +1,7 @@
 import { ReactNode, useEffect } from 'react';
 import { useLocation } from 'react-router-dom';
 import { PublicOnly, RequireAuth } from '@/features/auth/AuthRouteGuards';
+import { RequireOnboarding, RequireOrganization } from '@/features/organization/OrganizationRouteGuards';
 
 interface RootLayoutProps {
   children: ReactNode;
@@ -14,6 +15,7 @@ const KNOWN_LANDING_HASHES = ['#product', '#workflow', '#incident-room', '#postm
 export function RootLayout({ children }: RootLayoutProps) {
   const location = useLocation();
   const isProtectedRoute = location.pathname === '/app' || location.pathname.startsWith('/app/');
+  const isOnboardingRoute = location.pathname === '/app/onboarding';
   const isAuthRoute = location.pathname === '/login' || location.pathname === '/signup' || location.pathname === '/verify-email';
 
   useEffect(() => {
@@ -30,7 +32,7 @@ export function RootLayout({ children }: RootLayoutProps) {
         Skip to main content
       </a>
       <div className="flex-1 flex flex-col">
-        {isProtectedRoute ? <RequireAuth>{children}</RequireAuth> : isAuthRoute ? <PublicOnly>{children}</PublicOnly> : children}
+        {isProtectedRoute ? <RequireAuth>{isOnboardingRoute ? <RequireOnboarding>{children}</RequireOnboarding> : <RequireOrganization>{children}</RequireOrganization>}</RequireAuth> : isAuthRoute ? <PublicOnly>{children}</PublicOnly> : children}
       </div>
     </div>
   );
