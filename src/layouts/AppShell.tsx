@@ -10,6 +10,7 @@ import { RouteErrorBoundary } from '@/components/feedback/RouteErrorBoundary';
 import { useAuth } from '@/features/auth/AuthProvider';
 import { useOrganization } from '@/features/organization/OrganizationProvider';
 import { getAppRouteTitle } from './appRouteTitle';
+import { canRole } from '@/features/organization/domain/capabilities';
 
 interface AppShellProps {
   children: ReactNode;
@@ -43,6 +44,7 @@ function AppShellContent({ children }: AppShellProps) {
   const phase02OrganizationBoundary = isMockMode ? 'NORTHSTAR COMMERCE' : 'ORGANIZATION NOT RESOLVED';
   const roleLabel = context?.membership.role === 'admin' ? 'ORGANIZATION ADMIN' : context?.membership.role === 'incident_manager' ? 'INCIDENT MANAGER' : context?.membership.role === 'responder' ? 'RESPONDER' : context?.membership.role === 'reporter' ? 'REPORTER' : null;
   const hasActiveOrganization = !isMockMode && context?.membership.status === 'active';
+  const canManageServices = hasActiveOrganization && canRole(context?.membership.role, 'MANAGE_SERVICES');
   const workspaceModeLabel = hasActiveOrganization ? 'LIVE WORKSPACE' : 'FRONTEND PREVIEW';
   const dataSourceLabel = hasActiveOrganization ? 'BASE44' : 'MOCK MODE';
   const authorityLabel = hasActiveOrganization ? 'MEMBERSHIP ACTIVE' : 'BACKEND PENDING';
@@ -238,7 +240,7 @@ function AppShellContent({ children }: AppShellProps) {
                 <span className="flex items-center gap-2">
                   SERVICES
                 </span>
-                <span className="text-[9px] tracking-wider uppercase text-[#A8AAA3] border border-[#242522]/60 px-1 py-0.5 bg-[#141513]/20">{hasActiveOrganization ? 'READ ONLY' : 'PREVIEW'}</span>
+                {!canManageServices && <span className="text-[9px] tracking-wider uppercase text-[#A8AAA3] border border-[#242522]/60 px-1 py-0.5 bg-[#141513]/20">{hasActiveOrganization ? 'READ ONLY' : 'PREVIEW'}</span>}
               </Link>
             )}
 
@@ -459,7 +461,7 @@ function AppShellContent({ children }: AppShellProps) {
                     <span className="flex items-center gap-2">
                       SERVICES
                     </span>
-                    <span className="text-[9px] tracking-wider uppercase text-[#A8AAA3] border border-[#242522]/60 px-1 py-0.5 bg-[#141513]/20">{hasActiveOrganization ? 'READ ONLY' : 'PREVIEW'}</span>
+                    {!canManageServices && <span className="text-[9px] tracking-wider uppercase text-[#A8AAA3] border border-[#242522]/60 px-1 py-0.5 bg-[#141513]/20">{hasActiveOrganization ? 'READ ONLY' : 'PREVIEW'}</span>}
                   </Link>
                 )}
 

@@ -1,0 +1,10 @@
+export const INCIDENT_SOURCES = ['manual', 'demo', 'api'] as const;
+export const INCIDENT_SEVERITIES = ['SEV1', 'SEV2', 'SEV3', 'SEV4'] as const;
+export const INCIDENT_STATUSES = ['reported', 'triaging', 'investigating', 'identified', 'monitoring', 'resolved', 'closed'] as const;
+export const INCIDENT_UPDATE_EVENTS = ['incident_created', 'incident_seeded', 'incident_resolved', 'incident_closed'] as const;
+export type IncidentSeverity = typeof INCIDENT_SEVERITIES[number];
+export type IncidentStatus = typeof INCIDENT_STATUSES[number];
+export type Incident = { id: string; organizationId: string; code: string; title: string; description: string; source: typeof INCIDENT_SOURCES[number]; serviceId?: string; reporterUserId: string; commanderUserId?: string; severity: IncidentSeverity; severitySource: 'human'|'ai_suggested'|'rule_baseline'; status: IncidentStatus; impactSummary?: string; observedStartAt?: string; reportedAt: string; acknowledgedAt?: string; resolvedAt?: string; closedAt?: string; recoveryVerified: boolean; publicVisibility: 'private'|'public'; isDemo: boolean; reopenedCount: number; createdAt?: string; updatedAt?: string };
+export type IncidentUpdate = { id: string; organizationId: string; incidentId: string; eventType: string; actorUserId?: string; actorType: 'user'|'system'|'ai'; visibility: 'internal'|'public'; message: string; occurredAt: string; isDemo: boolean };
+export type IncidentCreateInput = { title: string; description: string; serviceId?: string; observedStartAt?: string; impactHint?: string; requestId: string };
+export type IncidentFilters = { search?: string; severity?: IncidentSeverity[]; status?: IncidentStatus[]; serviceId?: string; sort?: 'reported_desc'|'reported_asc'|'severity'|'updated'; limit?: number; cursor?: string };

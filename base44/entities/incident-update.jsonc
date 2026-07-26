@@ -1,0 +1,18 @@
+{
+  "name": "IncidentUpdate",
+  "type": "object",
+  "properties": {
+    "organization_id": { "type": "string" },
+    "incident_id": { "type": "string" },
+    "event_type": { "type": "string", "enum": ["incident_created", "incident_seeded", "incident_acknowledged", "status_changed", "severity_changed", "commander_assigned", "internal_note_added", "public_update_published", "incident_resolved", "incident_closed", "incident_reopened"] },
+    "actor_user_id": { "type": "string" },
+    "actor_type": { "type": "string", "enum": ["user", "system", "ai"] },
+    "visibility": { "type": "string", "enum": ["internal", "public"] },
+    "message": { "type": "string", "minLength": 1, "maxLength": 1000 },
+    "metadata": { "type": "object", "properties": { "code": { "type": "string", "maxLength": 32 }, "status": { "type": "string", "maxLength": 32 }, "severity": { "type": "string", "maxLength": 8 } } },
+    "occurred_at": { "type": "string", "format": "date-time" },
+    "is_demo": { "type": "boolean", "default": false }
+  },
+  "required": ["organization_id", "incident_id", "event_type", "actor_type", "visibility", "message", "occurred_at", "is_demo"],
+  "rls": { "create": false, "read": false, "update": false, "delete": false }
+}

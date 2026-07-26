@@ -264,3 +264,66 @@ Phase 03 is implemented and hosted-runtime verified on `backend/base44-phase-03-
 - Organization, Membership, the User extension, and the four targeted organization functions were deployed without a full Base44 deployment. The site-only deployment passed hosted verification for onboarding, active Admin Membership restoration, AppShell identity, Team, Settings, real-data empty boundaries, logout/session behavior, responsive presentation, and mock-data isolation.
 - The final automated baseline is 38 test files and 300 tests, passing twice consecutively. Shared test teardown now clears rendered DOM, timers, and spies after every test to prevent cross-test timing leakage without increasing test timeouts.
 - Phase 04 remains responsible for Services, Dashboard metrics, Incidents, tasks, timeline, demo seed data, realtime, AI, and Postmortem backend resources.
+
+## 10 / Major Phase 04 — Operational Data Foundation (pre-deployment)
+
+The Phase 04 branch adds the tenant-scoped operational data boundary for
+Services, Incidents, and append-only IncidentUpdate activity. The local entity
+manifest intentionally retains User, Organization, and Membership and adds
+only Service, Incident, and IncidentUpdate; Task, Postmortem, AI, notification,
+audit, and realtime resources remain out of scope.
+
+Typed operational gateways live under `src/features/operations/` and keep
+components independent of Base44. Base44 mode uses server-authoritative
+functions for service reads/writes, incident creation and reads, dashboard
+overview, and demo seed/reset. Mock mode remains unchanged and makes no hosted
+operational request. Query keys are scoped by data mode and organization ID so
+workspace changes cannot display stale tenant data.
+
+All new entities deny direct client CRUD. Backend functions authenticate the
+current user, require an active Membership in the requested organization, and
+return sanitized DTOs. Incident creation derives the reporter, organization,
+code, status, severity baseline, and timestamps server-side, then appends an
+`incident_created` update. Demo seed/reset uses exact confirmations and only
+touches records marked `is_demo` in the authorized demo organization.
+
+The Base44 frontend boundaries are implemented for the Dashboard, Services,
+Incident List, New Incident, and read-only Incident Room. Task workflows,
+timeline mutations, status/severity/commander changes, resolution, AI,
+realtime, notifications, public status, and postmortems remain deferred.
+
+Resource and hosted runtime deployment are intentionally pending the approved
+Phase 04 deployment gate. Pre-deployment verification currently passes with
+42 test files and 322 tests; TypeScript, lint, and production build pass.
+
+## 11 / Major Phase 04 — Operational Data Foundation
+
+Phase 04 is implemented and hosted-runtime verified on
+`backend/base44-phase-04-incidents-dashboard`.
+
+- **Entity deployment:** `Service`, `Incident`, and `IncidentUpdate` were
+  added while preserving `User`, `Organization`, and `Membership`.
+- **Function deployment:** `create-service`, `update-service`, `list-services`,
+  `create-incident`, `list-incidents`, `get-incident`,
+  `get-dashboard-overview`, `seed-demo-data`, and `reset-demo-data` were
+  deployed with targeted function deployment only.
+- **Dashboard read behavior:** `get-dashboard-overview` is read-only. It
+  queries existing incidents, services, and incident updates, then deduplicates
+  the projected activity stream in memory. It does not repair records or write
+  back fallback activity.
+- **Incident creation idempotency:** `create-incident` creates one
+  `incident_created` update for a new incident and returns an existing incident
+  on retry without appending another update.
+- **Activity deduplication:** Legacy duplicate `incident_created` records are
+  collapsed in the dashboard read model by stable canonical identity so the UI
+  shows one creation activity per incident.
+- **Hosted runtime verification:** Real dashboard refreshes no longer create
+  IncidentUpdate records. Services creation/persistence, incident creation,
+  server-generated incident codes, dashboard updates, incident list updates,
+  and the honest open-tasks unavailable state were verified on the deployed
+  site.
+- **Deferred work:** Incident tasks, full timeline mutation, status/severity
+  mutation, commander assignment, resolution workflow, AI, realtime,
+  notifications, public status, and postmortems remain out of scope.
+- **Deployment status:** Backend resources were deployed with targeted
+  function deployment only. No full Base44 deployment occurred.

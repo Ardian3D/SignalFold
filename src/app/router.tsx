@@ -110,6 +110,16 @@ export const router = createBrowserRouter([
     ),
   },
   {
+    path: '/app/incidents/:incidentId',
+    element: (
+      <RootLayout>
+        <AppShell>
+          <IncidentRoomPage />
+        </AppShell>
+      </RootLayout>
+    ),
+  },
+  {
     path: '/app/incidents/SF-2026-0042',
     element: (
       <RootLayout>

@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { useFeedbackState } from '@/context/FeedbackStateContext';
 import { Base44EmptyBoundary } from '@/features/organization/OrganizationReadBoundaries';
 import { useOrganization } from '@/features/organization/OrganizationProvider';
+import { LiveDashboard } from '@/features/operations/OperationalViews';
 import { RouteFeedbackState } from '@/components/feedback/RouteFeedbackState';
 
 interface RecentActivityItem {
@@ -147,7 +148,7 @@ const recentActivities: RecentActivityItem[] = [
  */
 export function DashboardPage() {
   const { isMockMode } = useOrganization();
-  if (!isMockMode) return <Base44EmptyBoundary title="ACTIVE ORGANIZATION / EMPTY INCIDENT DATA" />;
+  if (!isMockMode) return <LiveDashboard />;
   const { getFeedbackState } = useFeedbackState();
   const feedback = getFeedbackState('dashboard');
 

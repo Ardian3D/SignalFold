@@ -1,0 +1,19 @@
+{
+  "name": "Service",
+  "type": "object",
+  "properties": {
+    "organization_id": { "type": "string" },
+    "name": { "type": "string", "minLength": 2, "maxLength": 100 },
+    "slug": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$" },
+    "description": { "type": "string", "maxLength": 1000 },
+    "criticality": { "type": "string", "enum": ["low", "medium", "high", "critical"] },
+    "operational_status": { "type": "string", "enum": ["operational", "degraded", "outage", "maintenance"], "default": "operational" },
+    "owner_user_id": { "type": "string" },
+    "tags": { "type": "array", "maxItems": 12, "items": { "type": "string", "maxLength": 32 } },
+    "is_active": { "type": "boolean", "default": true },
+    "is_demo": { "type": "boolean", "default": false },
+    "request_id": { "type": "string", "maxLength": 128 }
+  },
+  "required": ["organization_id", "name", "slug", "criticality", "operational_status", "is_active", "is_demo"],
+  "rls": { "create": false, "read": false, "update": false, "delete": false }
+}
