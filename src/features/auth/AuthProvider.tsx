@@ -43,12 +43,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const runtime = useMemo(() => getBase44RuntimeConfig(), []);
   const isMockMode = runtime.dataMode === 'mock' || !runtime.isConfigured;
   const gateway = useMemo<AuthGateway>(() => getAuthGateway(runtime), [runtime]);
-  const [state, setState] = useState<SessionState>(initialSessionState);
+  const [state, setState] = useState<SessionState>(() => isMockMode ? applyLogout() : initialSessionState());
   const restorePromise = useRef<Promise<void> | null>(null);
   const restored = useRef(false);
   const mounted = useRef(true);
 
   const restoreSession = useCallback(async () => {
+    if (isMockMode) return;
     if (restorePromise.current) return restorePromise.current;
     if (restored.current) return;
     setState(beginSessionRestore());
@@ -60,15 +61,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     });
     restorePromise.current = promise;
     return promise;
-  }, [gateway]);
+  }, [gateway, isMockMode]);
 
   useEffect(() => {
+    if (isMockMode) return;
     mounted.current = true;
     void restoreSession().catch(() => {
       if (mounted.current) setState({ status: 'ERROR', user: null, error: { code: 'UNKNOWN_AUTH_ERROR', retryable: true } });
     });
     return () => { mounted.current = false; };
-  }, [restoreSession]);
+  }, [isMockMode, restoreSession]);
 
   const loginWithEmailPassword = useCallback(async (email: string, password: string) => {
     const result = await gateway.loginWithEmailPassword(email, password);

@@ -65,6 +65,17 @@ Phase 02C connects the frozen authentication surfaces to the existing Base44 fou
 
 The next phase is session completion and onboarding boundary work.
 
+## 00D / Backend Phase 02C.1 Runtime Verification
+
+- **Base44-mode configuration:** Verified from ignored local project metadata using a temporary `.env.local`; no runtime credential or secret was stored.
+- **Automated coverage:** Added test-mode mock isolation and AuthProvider restoration tests. The suite covers mock preservation, one-time restoration, safe identity mapping, recoverable restoration errors, gateway contracts, OTP boundaries, Google provider delegation, and return-path safety.
+- **Runtime HTTP checks:** Landing, Login, Signup, and protected-route entry points served successfully from the local Vite development server.
+- **Live email/OTP/Google verification:** Not completed because the in-app browser runtime was unavailable. No real account, password, OTP, or Google consent flow was exercised.
+- **Visual verification:** Pending browser availability; no visual code changes were made beyond the existing Phase 02C implementation.
+- **Security boundary:** SDK token ownership remains unchanged. No Organization, Membership, tenant authorization, entities, functions, realtime, or DeepSeek integration exists.
+
+Phase 02D remains blocked until external live-auth and browser visual verification are completed.
+
 ---
 
 ## 01 / Frontend Freeze Status

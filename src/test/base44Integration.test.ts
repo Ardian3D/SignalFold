@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import {
   getBackendAvailability,
+  getBase44RuntimeConfig,
   parseBase44RuntimeConfig,
   type Base44Environment,
 } from '@/integrations/base44/config';
@@ -26,6 +27,11 @@ const makeEnvironment = (overrides: Base44Environment = {}): Base44Environment =
 });
 
 describe('Base44 runtime configuration', () => {
+  it('keeps automated test runs in mock mode even when local runtime variables exist', () => {
+    expect(getBase44RuntimeConfig().dataMode).toBe('mock');
+    expect(getBase44RuntimeConfig().isConfigured).toBe(false);
+  });
+
   it('defaults missing values to safe mock mode', () => {
     const config = parseBase44RuntimeConfig({}, { dev: true });
     expect(config).toEqual({

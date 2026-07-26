@@ -56,6 +56,13 @@ export function parseBase44RuntimeConfig(
 }
 
 export function getBase44RuntimeConfig(): Base44RuntimeConfig {
+  if (env.MODE === 'test') {
+    return parseBase44RuntimeConfig(
+      { dataMode: 'mock' },
+      { dev: false },
+    );
+  }
+
   return parseBase44RuntimeConfig(
     {
       dataMode: env.VITE_DATA_MODE,
