@@ -55,7 +55,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setState(beginSessionRestore());
     const promise = gateway.restoreSession().then((result) => {
       if (mounted.current) setState(applySessionResult(result));
-      restored.current = true;
+      restored.current = result.ok;
     }).finally(() => {
       restorePromise.current = null;
     });
@@ -67,6 +67,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (isMockMode) return;
     mounted.current = true;
     void restoreSession().catch(() => {
+      restored.current = false;
       if (mounted.current) setState({ status: 'ERROR', user: null, error: { code: 'UNKNOWN_AUTH_ERROR', retryable: true } });
     });
     return () => { mounted.current = false; };

@@ -5,7 +5,7 @@ import { GoogleAuthButton } from '@/components/auth/GoogleAuthButton';
 import { AuthPageShell } from '@/components/auth/AuthPageShell';
 import { Eye, EyeOff } from 'lucide-react';
 import { useAuth } from '@/features/auth/AuthProvider';
-import { getSafeReturnPath } from '@/features/auth/routing/returnPath';
+import { getAuthenticatedEntryPath } from '@/features/auth/routing/returnPath';
 
 const authMessage = (code: string): string => {
   if (code === 'INVALID_CREDENTIALS') return 'AUTHENTICATION FAILED\nThe supplied credentials could not be verified.';
@@ -50,7 +50,7 @@ export function LoginPage() {
     }
     setIsSubmitting(true);
     setSubmitMessage('');
-    const result = await loginWithGoogle(getSafeReturnPath((location.state as { returnPath?: unknown } | null)?.returnPath));
+    const result = await loginWithGoogle(getAuthenticatedEntryPath((location.state as { returnPath?: unknown } | null)?.returnPath));
     if (!result.ok) {
       setIsSubmitting(false);
       setSubmitMessage(authMessage(result.error.code));
@@ -122,7 +122,7 @@ export function LoginPage() {
     if (!isMockMode) {
       const result = await loginWithEmailPassword(email, password);
       if (result.ok) {
-        navigate(getSafeReturnPath((location.state as { returnPath?: unknown } | null)?.returnPath));
+        navigate(getAuthenticatedEntryPath((location.state as { returnPath?: unknown } | null)?.returnPath));
       } else {
         setIsSubmitting(false);
         if (result.error.code === 'INVALID_CREDENTIALS') setPassword('');

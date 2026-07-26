@@ -5,6 +5,7 @@ export { AuthProvider, useAuth } from './AuthProvider';
 export { PublicOnly, RequireAuth } from './AuthRouteGuards';
 export { normalizeAuthError, unavailableAuthError, type AuthError, type AuthErrorCode } from './domain/authErrors';
 export type { AuthResult, AuthSession, AuthenticatedUser, RegistrationResult } from './domain/authTypes';
+export { projectBase44User } from './domain/userProjection';
 export type { AuthGateway } from './ports/AuthGateway';
 export {
   applyLogout,
@@ -13,4 +14,4 @@ export {
   initialSessionState,
   type SessionState,
 } from './session/authSessionMachine';
-export { getSafeReturnPath } from './routing/returnPath';
+export { getAuthenticatedEntryPath, getSafeReturnPath } from './routing/returnPath';

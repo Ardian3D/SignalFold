@@ -4,7 +4,7 @@ import { BrandLogo } from '@/components/brand/BrandLogo';
 import { GoogleAuthButton } from '@/components/auth/GoogleAuthButton';
 import { AuthPageShell } from '@/components/auth/AuthPageShell';
 import { useAuth } from '@/features/auth/AuthProvider';
-import { getSafeReturnPath } from '@/features/auth/routing/returnPath';
+import { getAuthenticatedEntryPath } from '@/features/auth/routing/returnPath';
 
 const authMessage = (code: string): string => {
   if (code === 'HOSTED_SITE_REQUIRED') return 'GOOGLE OAUTH REQUIRES THE DEPLOYED SIGNALFOLD SITE.';
@@ -135,7 +135,7 @@ export function SignupPage() {
     if (!isMockMode) {
       setIsSubmitting(true);
       setSubmitMessage('');
-      const result = await loginWithGoogle(getSafeReturnPath((location.state as { returnPath?: unknown } | null)?.returnPath));
+      const result = await loginWithGoogle(getAuthenticatedEntryPath((location.state as { returnPath?: unknown } | null)?.returnPath));
       if (!result.ok) {
         setIsSubmitting(false);
         setSubmitMessage(authMessage(result.error.code));
@@ -177,7 +177,12 @@ export function SignupPage() {
     if (!isMockMode) {
       const result = await registerWithEmailPassword(email, password);
       if (result.ok) {
-        navigate('/verify-email', { state: { email: result.value.email } });
+        navigate('/verify-email', {
+          state: {
+            email: result.value.email,
+            returnPath: getAuthenticatedEntryPath((location.state as { returnPath?: unknown } | null)?.returnPath),
+          },
+        });
       } else {
         setIsSubmitting(false);
         setSubmitMessage(authMessage(result.error.code));

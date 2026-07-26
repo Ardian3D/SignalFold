@@ -24,7 +24,7 @@ export const beginSessionRestore = (): SessionState => ({
 export const applySessionResult = (result: AuthResult<{ status: 'authenticated'; user: AuthenticatedUser } | { status: 'unauthenticated'; user: null }>): SessionState => {
   if (!result.ok) {
     return {
-      status: result.error.code === 'AUTH_UNAVAILABLE' ? 'UNAVAILABLE' : 'ERROR',
+      status: result.error.code === 'AUTH_UNAVAILABLE' || result.error.code === 'AUTH_SERVICE_UNAVAILABLE' ? 'UNAVAILABLE' : 'ERROR',
       user: null,
       error: result.error,
     };

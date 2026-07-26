@@ -4,6 +4,7 @@ import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { AuthFormCard, AuthPageMain, AuthPageShell } from '@/components/auth/AuthPageShell';
 import { BrandLogo } from '@/components/brand/BrandLogo';
 import { useAuth } from '@/features/auth/AuthProvider';
+import { getAuthenticatedEntryPath } from '@/features/auth/routing/returnPath';
 
 const messageFor = (code: string): string => {
   if (code === 'INVALID_OTP') return 'The verification code is invalid.';
@@ -17,7 +18,8 @@ export function VerifyEmailPage() {
   const location = useLocation();
   const navigate = useNavigate();
   const { isMockMode, verifyEmailOtp, resendVerificationOtp } = useAuth();
-  const email = (location.state as { email?: unknown } | null)?.email;
+  const routeState = location.state as { email?: unknown; returnPath?: unknown } | null;
+  const email = routeState?.email;
   const safeEmail = typeof email === 'string' ? email : '';
   const [otp, setOtp] = useState('');
   const [pending, setPending] = useState(false);
@@ -31,7 +33,13 @@ export function VerifyEmailPage() {
     setOtp('');
     setPending(false);
     if (result.ok) {
-      navigate('/login', { state: { email: safeEmail, verificationComplete: true } });
+      navigate('/login', {
+        state: {
+          email: safeEmail,
+          verificationComplete: true,
+          returnPath: getAuthenticatedEntryPath(routeState?.returnPath),
+        },
+      });
     } else {
       setMessage(messageFor(result.error.code));
     }

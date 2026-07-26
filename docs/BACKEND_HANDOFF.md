@@ -85,6 +85,19 @@ Phase 02D remains blocked until external live-auth and browser visual verificati
 - **Runtime verification:** A site-only Base44 deployment is still pending explicit approval. No full Base44 deployment or backend-resource deployment has occurred.
 - **Scope:** No Organization, Membership, tenant authorization, entities, functions, realtime, or DeepSeek integration was added.
 
+## 00F / Backend Phase 02D Session and Onboarding Boundary
+
+- **Safe identity projection:** `src/features/auth/domain/userProjection.ts` is the single Base44 User projection. Application code receives only ID, email, nullable display name, and email-verification state; SDK tokens, metadata, and Base44 `User.role` remain excluded.
+- **Session lifecycle:** `AuthProvider` restores once at bootstrap, deduplicates concurrent restoration, clears stale identity on invalid sessions and logout, and permits a controlled retry after recoverable network or service failures.
+- **Application entry:** `getAuthenticatedEntryPath()` centralizes the `/app` default and safe protected deep-link validation for email login, Google OAuth, signup verification handoff, route guards, and authenticated public-route redirects.
+- **Session failures:** Expired sessions resolve to unauthenticated and preserve a safe protected return path. Network and service failures remain distinct from logout and use the existing authentication-unavailable presentation with an accessible retry action.
+- **AppShell identity:** Base44 mode reads only the projected identity through `useAuth()`. It displays a real display name or email fallback and marks organization context as unresolved; mock mode preserves `OPERATOR_01` and `NORTHSTAR COMMERCE`.
+- **Onboarding boundary:** Mock onboarding remains unchanged. Base44 mode keeps `/app/onboarding` protected but does not create or join an organization, create Membership, assign a role, persist completion locally, or claim workspace entry succeeded.
+- **Phase 03 integration point:** A future authoritative Membership resolver will determine organization context and whether onboarding is required. Authentication alone continues to prove identity only.
+- **Scope:** No Organization, Membership, tenant authority, backend domain entity, function, realtime integration, or DeepSeek integration exists.
+- **Runtime status:** Phase 02C email/password, OTP, Google OAuth, callback, restoration, logout, verification layout, and mock-mode behavior were manually accepted on Base44 hosting. The Phase 02D site-only deployment also passed hosted verification for safe AppShell identity, unresolved organization context, protected onboarding, the non-persisting organization setup boundary, hard-refresh restoration, logout to `/login`, and protected-route rejection after logout.
+- **Major Phase 02 status:** Authentication and session boundaries are complete and verified. Organization, Membership, tenant authorization, and authoritative onboarding persistence remain explicitly deferred to Backend Phase 03.
+
 ---
 
 ## 01 / Frontend Freeze Status

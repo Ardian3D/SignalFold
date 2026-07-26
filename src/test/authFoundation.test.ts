@@ -44,6 +44,7 @@ const user: Base44User & { access_token: string } = {
 };
 
 const { Base44AuthGateway, mapBase44User } = await import('@/features/auth/adapters/Base44AuthGateway');
+const { projectBase44User } = await import('@/features/auth/domain/userProjection');
 const { MockAuthGateway } = await import('@/features/auth/adapters/MockAuthGateway');
 const { normalizeAuthError } = await import('@/features/auth/domain/authErrors');
 const { applyLogout, applySessionResult, beginSessionRestore, initialSessionState } = await import('@/features/auth/session/authSessionMachine');
@@ -81,6 +82,18 @@ describe('authenticated user mapping', () => {
     expect(mapBase44User({ ...user, full_name: null }).displayName).toBeNull();
     expect(mapBase44User(user)).not.toHaveProperty('role');
     expect(mapBase44User(user)).not.toHaveProperty('access_token');
+  });
+
+  it('uses one centralized projection and keeps missing optional identity data null', () => {
+    expect(mapBase44User(user)).toEqual(projectBase44User(user));
+    expect(projectBase44User({ ...user, full_name: null })).toEqual({
+      id: 'user-1',
+      email: 'operator@example.test',
+      displayName: null,
+      emailVerified: true,
+    });
+    expect(projectBase44User(user)).not.toHaveProperty('organizationId');
+    expect(projectBase44User(user)).not.toHaveProperty('organizationRole');
   });
 });
 
@@ -212,6 +225,7 @@ describe('session state model and error taxonomy', () => {
     expect(beginSessionRestore().status).toBe('RESTORING');
     expect(applySessionResult({ ok: true, value: { status: 'authenticated', user: { id: '1', email: 'operator@example.test', displayName: null, emailVerified: false } } }).status).toBe('AUTHENTICATED');
     expect(applySessionResult({ ok: false, error: { code: 'AUTH_UNAVAILABLE', retryable: false } }).status).toBe('UNAVAILABLE');
+    expect(applySessionResult({ ok: false, error: { code: 'AUTH_SERVICE_UNAVAILABLE', retryable: true } }).status).toBe('UNAVAILABLE');
     expect(applySessionResult({ ok: false, error: { code: 'NETWORK_ERROR', retryable: true } }).status).toBe('ERROR');
     expect(applyLogout()).toEqual({ status: 'UNAUTHENTICATED', user: null, error: null });
   });

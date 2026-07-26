@@ -28,3 +28,5 @@ export function getSafeReturnPath(value: unknown): string {
 
   return decoded;
 }
+
+export const getAuthenticatedEntryPath = (value: unknown): string => getSafeReturnPath(value);

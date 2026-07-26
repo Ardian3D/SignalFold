@@ -6,20 +6,14 @@ import type { Base44RuntimeConfig } from '@/integrations/base44/config';
 import { hostedSiteRequiredAuthError, normalizeAuthError, unavailableAuthError } from '../domain/authErrors';
 import type { AuthGateway } from '../ports/AuthGateway';
 import type { AuthResult, AuthSession, AuthenticatedUser, RegistrationResult } from '../domain/authTypes';
+import { projectBase44User } from '../domain/userProjection';
 import { getSafeReturnPath } from '../routing/returnPath';
 import { getRedirectAuthRuntime, type RedirectAuthRuntime } from '../runtime/redirectAuthRuntime';
 
 const success = <T>(value: T): AuthResult<T> => ({ ok: true, value });
 const failure = <T>(): AuthResult<T> => ({ ok: false, error: unavailableAuthError() });
 
-export function mapBase44User(user: Base44User): AuthenticatedUser {
-  return {
-    id: user.id,
-    email: user.email,
-    displayName: user.full_name,
-    emailVerified: user.is_verified,
-  };
-}
+export const mapBase44User = (user: Base44User): AuthenticatedUser => projectBase44User(user);
 
 const getAuthModule = (config: Base44RuntimeConfig): AuthResult<AuthModule> => {
   const client = getBase44Client(config);

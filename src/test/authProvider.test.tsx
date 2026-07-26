@@ -1,4 +1,4 @@
-import { render, screen, waitFor } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 const mocks = vi.hoisted(() => ({
@@ -42,6 +42,16 @@ function Probe() {
   return <output>{auth.state.status}:{auth.user?.email ?? 'no-user'}</output>;
 }
 
+function RetryProbe() {
+  const auth = useAuth();
+  return (
+    <div>
+      <output>{auth.state.status}:{auth.user?.email ?? 'no-user'}</output>
+      <button type="button" onClick={() => void auth.restoreSession()}>RETRY</button>
+    </div>
+  );
+}
+
 describe('AuthProvider runtime session boundary', () => {
   beforeEach(() => {
     mocks.runtime.dataMode = 'mock';
@@ -81,5 +91,20 @@ describe('AuthProvider runtime session boundary', () => {
 
     await waitFor(() => expect(screen.getByText('ERROR:no-user')).toBeInTheDocument());
     expect(screen.queryByText(/AUTHENTICATED/)).not.toBeInTheDocument();
+  });
+
+  it('allows one controlled retry after a recoverable restoration failure', async () => {
+    mocks.runtime.dataMode = 'base44';
+    mocks.runtime.appId = 'app_test';
+    mocks.runtime.isConfigured = true;
+    mocks.gateway.restoreSession
+      .mockResolvedValueOnce({ ok: false, error: { code: 'NETWORK_ERROR', retryable: true } })
+      .mockResolvedValueOnce({ ok: true, value: { status: 'authenticated', user } });
+
+    render(<AuthProvider><RetryProbe /></AuthProvider>);
+    await waitFor(() => expect(screen.getByText('ERROR:no-user')).toBeInTheDocument());
+    fireEvent.click(screen.getByRole('button', { name: 'RETRY' }));
+    await waitFor(() => expect(screen.getByText('AUTHENTICATED:operator@example.test')).toBeInTheDocument());
+    expect(mocks.gateway.restoreSession).toHaveBeenCalledTimes(2);
   });
 });

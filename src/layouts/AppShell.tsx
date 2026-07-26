@@ -34,7 +34,7 @@ function AppShellContent({ children }: AppShellProps) {
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const location = useLocation();
   const navigate = useNavigate();
-  const { isMockMode, logout } = useAuth();
+  const { isMockMode, user, logout } = useAuth();
   const [isLoggingOut, setIsLoggingOut] = useState(false);
   const isIncidentsActive = location.pathname === '/app/incidents' || location.pathname === '/app/incidents/SF-2026-0042';
   const isIncidentsNewActive = location.pathname === '/app/incidents/new';
@@ -144,7 +144,7 @@ function AppShellContent({ children }: AppShellProps) {
           <div className="p-3 bg-[#141513]/40 border border-[#242522] space-y-2 rounded-[2px]" aria-label="Workspace Context">
             <div>
               <div className="text-[9px] font-mono text-[#5C5E58] tracking-widest uppercase" style={{ fontFamily: 'var(--font-technical)' }}>ORGANIZATION</div>
-              <div className="text-[11px] font-mono font-bold text-[#F3F1EA] tracking-wide" style={{ fontFamily: 'var(--font-technical)' }}>NORTHSTAR COMMERCE</div>
+              <div className="text-[11px] font-mono font-bold text-[#F3F1EA] tracking-wide" style={{ fontFamily: 'var(--font-technical)' }}>{isMockMode ? 'NORTHSTAR COMMERCE' : 'ORGANIZATION NOT RESOLVED'}</div>
             </div>
             <div>
               <div className="text-[9px] font-mono text-[#5C5E58] tracking-widest uppercase" style={{ fontFamily: 'var(--font-technical)' }}>MODE</div>
@@ -359,7 +359,7 @@ function AppShellContent({ children }: AppShellProps) {
             <div className="p-3 bg-[#141513]/40 border border-[#242522] space-y-1.5 rounded-[2px]" aria-label="Mobile Workspace Context">
               <div>
                 <div className="text-[9px] font-mono text-[#5C5E58] tracking-widest uppercase" style={{ fontFamily: 'var(--font-technical)' }}>ORGANIZATION</div>
-                <div className="text-[10px] font-mono font-bold text-[#F3F1EA] tracking-wide" style={{ fontFamily: 'var(--font-technical)' }}>NORTHSTAR COMMERCE</div>
+                <div className="text-[10px] font-mono font-bold text-[#F3F1EA] tracking-wide" style={{ fontFamily: 'var(--font-technical)' }}>{isMockMode ? 'NORTHSTAR COMMERCE' : 'ORGANIZATION NOT RESOLVED'}</div>
               </div>
               <div>
                 <div className="text-[9px] font-mono text-[#5C5E58] tracking-widest uppercase" style={{ fontFamily: 'var(--font-technical)' }}>MODE</div>
@@ -629,7 +629,7 @@ function AppShellContent({ children }: AppShellProps) {
               aria-label="Current Operator Info"
             >
               <User className="w-3.5 h-3.5 text-[#5C5E58]" aria-hidden="true" />
-              <span className="hidden sm:inline">OPERATOR_01</span>
+              <span className="hidden sm:inline">{isMockMode ? 'OPERATOR_01' : user?.displayName ?? user?.email ?? 'AUTHENTICATED USER'}</span>
               <span className="w-1.5 h-1.5 rounded-full bg-amber-500/80" title="Preview connection" />
             </div>
             {!isMockMode && (
