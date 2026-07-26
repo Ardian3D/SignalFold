@@ -1,5 +1,5 @@
 import { ReactNode, useState, useEffect } from 'react';
-import { Link, useLocation } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { Menu, X, Search, Bell, User } from 'lucide-react';
 import { BrandLogo } from '@/components/brand/BrandLogo';
 import { ConnectionProvider } from '@/context/ConnectionContext';
@@ -7,6 +7,7 @@ import { AiOperationProvider } from '@/context/AiOperationContext';
 import { SystemConnectivityBanner } from '@/components/feedback/SystemConnectivityBanner';
 import { FeedbackStateProvider } from '@/context/FeedbackStateContext';
 import { RouteErrorBoundary } from '@/components/feedback/RouteErrorBoundary';
+import { useAuth } from '@/features/auth/AuthProvider';
 
 interface AppShellProps {
   children: ReactNode;
@@ -32,6 +33,9 @@ export function AppShell({ children }: AppShellProps) {
 function AppShellContent({ children }: AppShellProps) {
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const location = useLocation();
+  const navigate = useNavigate();
+  const { isMockMode, user, logout } = useAuth();
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
   const isIncidentsActive = location.pathname === '/app/incidents' || location.pathname === '/app/incidents/SF-2026-0042';
   const isIncidentsNewActive = location.pathname === '/app/incidents/new';
   const isDashboardActive = location.pathname === '/app';
@@ -39,6 +43,13 @@ function AppShellContent({ children }: AppShellProps) {
   const isServicesActive = location.pathname === '/app/services';
   const isTeamActive = location.pathname === '/app/team';
   const isSettingsActive = location.pathname === '/app/settings';
+
+  const handleLogout = async () => {
+    if (isLoggingOut) return;
+    setIsLoggingOut(true);
+    const result = await logout();
+    if (isMockMode || !result.ok) navigate('/login', { replace: true });
+  };
 
   // Set page title for the SignalFold App
   useEffect(() => {
@@ -133,7 +144,7 @@ function AppShellContent({ children }: AppShellProps) {
           <div className="p-3 bg-[#141513]/40 border border-[#242522] space-y-2 rounded-[2px]" aria-label="Workspace Context">
             <div>
               <div className="text-[9px] font-mono text-[#5C5E58] tracking-widest uppercase" style={{ fontFamily: 'var(--font-technical)' }}>ORGANIZATION</div>
-              <div className="text-[11px] font-mono font-bold text-[#F3F1EA] tracking-wide" style={{ fontFamily: 'var(--font-technical)' }}>NORTHSTAR COMMERCE</div>
+              <div className="text-[11px] font-mono font-bold text-[#F3F1EA] tracking-wide" style={{ fontFamily: 'var(--font-technical)' }}>{isMockMode ? 'NORTHSTAR COMMERCE' : 'ORGANIZATION NOT RESOLVED'}</div>
             </div>
             <div>
               <div className="text-[9px] font-mono text-[#5C5E58] tracking-widest uppercase" style={{ fontFamily: 'var(--font-technical)' }}>MODE</div>
@@ -348,7 +359,7 @@ function AppShellContent({ children }: AppShellProps) {
             <div className="p-3 bg-[#141513]/40 border border-[#242522] space-y-1.5 rounded-[2px]" aria-label="Mobile Workspace Context">
               <div>
                 <div className="text-[9px] font-mono text-[#5C5E58] tracking-widest uppercase" style={{ fontFamily: 'var(--font-technical)' }}>ORGANIZATION</div>
-                <div className="text-[10px] font-mono font-bold text-[#F3F1EA] tracking-wide" style={{ fontFamily: 'var(--font-technical)' }}>NORTHSTAR COMMERCE</div>
+                <div className="text-[10px] font-mono font-bold text-[#F3F1EA] tracking-wide" style={{ fontFamily: 'var(--font-technical)' }}>{isMockMode ? 'NORTHSTAR COMMERCE' : 'ORGANIZATION NOT RESOLVED'}</div>
               </div>
               <div>
                 <div className="text-[9px] font-mono text-[#5C5E58] tracking-widest uppercase" style={{ fontFamily: 'var(--font-technical)' }}>MODE</div>
@@ -618,9 +629,14 @@ function AppShellContent({ children }: AppShellProps) {
               aria-label="Current Operator Info"
             >
               <User className="w-3.5 h-3.5 text-[#5C5E58]" aria-hidden="true" />
-              <span className="hidden sm:inline">OPERATOR_01</span>
+              <span className="hidden sm:inline">{isMockMode ? 'OPERATOR_01' : user?.displayName ?? user?.email ?? 'AUTHENTICATED USER'}</span>
               <span className="w-1.5 h-1.5 rounded-full bg-amber-500/80" title="Preview connection" />
             </div>
+            {!isMockMode && (
+              <button type="button" onClick={() => void handleLogout()} disabled={isLoggingOut} className="px-2.5 py-1 text-[9px] font-mono font-bold tracking-wider text-[#A8AAA3] hover:text-[#D6FF3F] border border-[#242522] rounded-[2px] disabled:opacity-50" style={{ fontFamily: 'var(--font-technical)' }}>
+                {isLoggingOut ? 'SIGNING OUT...' : 'SIGN OUT'}
+              </button>
+            )}
           </div>
         </header>
 

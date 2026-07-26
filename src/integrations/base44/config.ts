@@ -35,6 +35,19 @@ const parseDataMode = (value: unknown): DataMode => {
   return typeof value === 'string' && value.trim().toLowerCase() === 'base44' ? 'base44' : 'mock';
 };
 
+const parseLocalServerUrl = (value: unknown): string | null => {
+  const trimmed = trimToNull(value);
+  if (trimmed === null) return null;
+  try {
+    const url = new URL(trimmed);
+    return url.protocol === 'http:' && url.hostname === 'localhost' && url.port === '4400' && url.pathname === '/' && !url.search && !url.hash
+      ? url.origin
+      : null;
+  } catch {
+    return null;
+  }
+};
+
 export function parseBase44RuntimeConfig(
   input: Base44Environment,
   runtime: { dev: boolean },
@@ -43,7 +56,7 @@ export function parseBase44RuntimeConfig(
   const appId = trimToNull(input.appId);
   const useLocalDev = parseBoolean(input.useLocalDev);
   const localServerUrl = dataMode === 'base44' && useLocalDev && runtime.dev
-    ? trimToNull(input.localServerUrl)
+    ? parseLocalServerUrl(input.localServerUrl)
     : null;
 
   return {
@@ -56,6 +69,13 @@ export function parseBase44RuntimeConfig(
 }
 
 export function getBase44RuntimeConfig(): Base44RuntimeConfig {
+  if (env.MODE === 'test') {
+    return parseBase44RuntimeConfig(
+      { dataMode: 'mock' },
+      { dev: false },
+    );
+  }
+
   return parseBase44RuntimeConfig(
     {
       dataMode: env.VITE_DATA_MODE,

@@ -1,11 +1,25 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { BrandLogo } from '@/components/brand/BrandLogo';
 import { GoogleAuthButton } from '@/components/auth/GoogleAuthButton';
+import { AuthPageShell } from '@/components/auth/AuthPageShell';
 import { Eye, EyeOff } from 'lucide-react';
+import { useAuth } from '@/features/auth/AuthProvider';
+import { getAuthenticatedEntryPath } from '@/features/auth/routing/returnPath';
+
+const authMessage = (code: string): string => {
+  if (code === 'INVALID_CREDENTIALS') return 'AUTHENTICATION FAILED\nThe supplied credentials could not be verified.';
+  if (code === 'NETWORK_ERROR' || code === 'AUTH_SERVICE_UNAVAILABLE') return 'AUTHENTICATION SERVICE UNAVAILABLE\nTry again when connectivity is restored.';
+  if (code === 'GOOGLE_AUTH_CANCELLED') return 'GOOGLE AUTHENTICATION CANCELLED\nNo account changes were made.';
+  if (code === 'GOOGLE_AUTH_FAILED') return 'GOOGLE AUTHENTICATION FAILED\nTry again or continue with email.';
+  if (code === 'HOSTED_SITE_REQUIRED') return 'GOOGLE OAUTH REQUIRES THE DEPLOYED SIGNALFOLD SITE.';
+  return 'AUTHENTICATION ERROR\nThe authentication service could not complete the request.';
+};
 
 export function LoginPage() {
   const navigate = useNavigate();
+  const location = useLocation();
+  const { isMockMode, loginWithEmailPassword, loginWithGoogle } = useAuth();
   
   // Controlled inputs
   const [email, setEmail] = useState('');
@@ -23,13 +37,25 @@ export function LoginPage() {
   // Live region announcement
   const [announcement, setAnnouncement] = useState('');
 
-  const handleGoogleClick = () => {
-    setSubmitMessage(
-      'GOOGLE AUTHENTICATION NOT CONNECTED\nGoogle account access will be enabled during backend integration.'
-    );
-    setAnnouncement(
-      'GOOGLE AUTHENTICATION NOT CONNECTED. Google account access will be enabled during backend integration.'
-    );
+  const handleGoogleClick = async () => {
+    if (isSubmitting) return;
+    if (isMockMode) {
+      setSubmitMessage(
+        'GOOGLE AUTHENTICATION NOT CONNECTED\nGoogle account access will be enabled during backend integration.'
+      );
+      setAnnouncement(
+        'GOOGLE AUTHENTICATION NOT CONNECTED. Google account access will be enabled during backend integration.'
+      );
+      return;
+    }
+    setIsSubmitting(true);
+    setSubmitMessage('');
+    const result = await loginWithGoogle(getAuthenticatedEntryPath((location.state as { returnPath?: unknown } | null)?.returnPath));
+    if (!result.ok) {
+      setIsSubmitting(false);
+      setSubmitMessage(authMessage(result.error.code));
+      setAnnouncement(authMessage(result.error.code).replace('\n', '. '));
+    }
   };
 
   useEffect(() => {
@@ -74,7 +100,7 @@ export function LoginPage() {
     }
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
     const eErr = validateEmail(email);
@@ -91,7 +117,20 @@ export function LoginPage() {
 
     setIsSubmitting(true);
     setSubmitMessage('');
-    setAnnouncement('Validating credentials locally...');
+    setAnnouncement(isMockMode ? 'Validating credentials locally...' : 'Verifying credentials...');
+
+    if (!isMockMode) {
+      const result = await loginWithEmailPassword(email, password);
+      if (result.ok) {
+        navigate(getAuthenticatedEntryPath((location.state as { returnPath?: unknown } | null)?.returnPath));
+      } else {
+        setIsSubmitting(false);
+        if (result.error.code === 'INVALID_CREDENTIALS') setPassword('');
+        setSubmitMessage(authMessage(result.error.code));
+        setAnnouncement(authMessage(result.error.code).replace('\n', '. '));
+      }
+      return;
+    }
 
     // Simulate standard operational processing delay
     setTimeout(() => {
@@ -106,7 +145,7 @@ export function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen bg-[#0A0A0A] text-[#F3F1EA] flex flex-col justify-between selection:bg-[#D6FF3F] selection:text-[#0A0A0A] relative overflow-x-hidden p-4 sm:p-6 lg:p-8">
+    <AuthPageShell>
       {/* Background Subtle Tech Grid (Aria-Hidden) */}
       <div
         className="absolute inset-0 bg-[linear-gradient(to_right,#141513_1px,transparent_1px),linear-gradient(to_bottom,#141513_1px,transparent_1px)] bg-[size:32px_32px] opacity-10 pointer-events-none"
@@ -400,6 +439,6 @@ export function LoginPage() {
           <span className="w-1.5 h-1.5 rounded-full bg-amber-500" aria-hidden="true" />
         </div>
       </footer>
-    </div>
+    </AuthPageShell>
   );
 }

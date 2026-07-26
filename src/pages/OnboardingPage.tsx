@@ -1,10 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { BrandLogo } from '@/components/brand/BrandLogo';
+import { useAuth } from '@/features/auth/AuthProvider';
 
 type SetupPath = 'create' | 'join';
 
 export function OnboardingPage() {
+  const { isMockMode } = useAuth();
   const [currentStep, setCurrentStep] = useState<1 | 2 | 3>(1);
 
   // Entry status state for Step 3 Workspace entry
@@ -1122,10 +1124,12 @@ export function OnboardingPage() {
                   style={{ fontFamily: 'var(--font-technical)' }}
                 >
                   <div className="font-bold text-amber-500 uppercase tracking-widest">
-                    WORKSPACE ENTRY NOT CONNECTED
+                    {isMockMode ? 'WORKSPACE ENTRY NOT CONNECTED' : 'ORGANIZATION SETUP NOT CONNECTED'}
                   </div>
                   <p className="text-[11px] text-[#A8AAA3] font-sans leading-normal">
-                    The onboarding interface is complete. Organization creation, membership assignment, and dashboard entry will be enabled during backend integration.
+                    {isMockMode
+                      ? 'The onboarding interface is complete. Organization creation, membership assignment, and dashboard entry will be enabled during backend integration.'
+                      : 'Organization and membership persistence begins in Backend Phase 03.'}
                   </p>
                 </div>
               )}
@@ -1136,6 +1140,11 @@ export function OnboardingPage() {
                   type="button"
                   disabled={entryStatus === 'preparing'}
                   onClick={() => {
+                    if (!isMockMode) {
+                      setEntryStatus('not-connected');
+                      setAnnouncement('ORGANIZATION SETUP NOT CONNECTED. Organization and membership persistence begins in Backend Phase 03.');
+                      return;
+                    }
                     setEntryStatus('preparing');
                     setAnnouncement('Preparing workspace preview...');
                     setTimeout(() => {

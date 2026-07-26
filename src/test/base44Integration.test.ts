@@ -1,7 +1,11 @@
+import { readFileSync } from 'node:fs';
+import { resolve } from 'node:path';
+
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import {
   getBackendAvailability,
+  getBase44RuntimeConfig,
   parseBase44RuntimeConfig,
   type Base44Environment,
 } from '@/integrations/base44/config';
@@ -26,6 +30,11 @@ const makeEnvironment = (overrides: Base44Environment = {}): Base44Environment =
 });
 
 describe('Base44 runtime configuration', () => {
+  it('keeps automated test runs in mock mode even when local runtime variables exist', () => {
+    expect(getBase44RuntimeConfig().dataMode).toBe('mock');
+    expect(getBase44RuntimeConfig().isConfigured).toBe(false);
+  });
+
   it('defaults missing values to safe mock mode', () => {
     const config = parseBase44RuntimeConfig({}, { dev: true });
     expect(config).toEqual({
@@ -76,6 +85,12 @@ describe('Base44 runtime configuration', () => {
     expect(parseBase44RuntimeConfig(makeEnvironment({ ...base44, useLocalDev: 'false' }), { dev: true }).localServerUrl).toBeNull();
     expect(parseBase44RuntimeConfig(makeEnvironment(base44), { dev: false }).localServerUrl).toBeNull();
   });
+
+  it('rejects frontend and unsupported local server origins', () => {
+    for (const localServerUrl of ['http://localhost:3000', 'https://localhost:4400', 'http://127.0.0.1:4400', 'http://localhost:4400/api']) {
+      expect(parseBase44RuntimeConfig(makeEnvironment({ dataMode: 'base44', appId: 'app_123', useLocalDev: 'true', localServerUrl }), { dev: true }).localServerUrl).toBeNull();
+    }
+  });
 });
 
 describe('Base44 lazy client boundary', () => {
@@ -113,6 +128,13 @@ describe('Base44 lazy client boundary', () => {
     }), { dev: true });
     getBase44Client(config);
     expect(createClientMock).toHaveBeenCalledWith({ appId: 'app_123', serverUrl: 'http://localhost:4400' });
+  });
+
+  it('never overrides the hosted app base URL or uses the frontend origin as the SDK server', () => {
+    const source = readFileSync(resolve(process.cwd(), 'src/integrations/base44/client.ts'), 'utf8');
+    expect(source).not.toContain('appBaseUrl');
+    expect(source).not.toContain('https://base44.app');
+    expect(source).not.toContain('localhost:3000');
   });
 
   it('does not invoke auth, entities, functions, realtime, or network operations', () => {
