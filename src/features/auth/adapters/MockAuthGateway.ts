@@ -17,6 +17,10 @@ export class MockAuthGateway implements AuthGateway {
     return Promise.resolve(unavailable());
   }
 
+  public loginWithGoogle(_returnPath: string): Promise<AuthResult<void>> {
+    return Promise.resolve(unavailable());
+  }
+
   public verifyEmailOtp(_email: string, _otpCode: string): Promise<AuthResult<{ status: 'verified' }>> {
     return Promise.resolve(unavailable());
   }

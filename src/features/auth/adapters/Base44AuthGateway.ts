@@ -69,6 +69,18 @@ export class Base44AuthGateway implements AuthGateway {
     }
   }
 
+  public async loginWithGoogle(returnPath: string): Promise<AuthResult<void>> {
+    const auth = getAuthModule(this.config);
+    if (!auth.ok) return auth;
+
+    try {
+      auth.value.loginWithProvider('google', returnPath);
+      return success(undefined);
+    } catch (error) {
+      return { ok: false, error: normalizeAuthError(error) };
+    }
+  }
+
   public async verifyEmailOtp(email: string, otpCode: string): Promise<AuthResult<{ status: 'verified' }>> {
     const auth = getAuthModule(this.config);
     if (!auth.ok) return auth;

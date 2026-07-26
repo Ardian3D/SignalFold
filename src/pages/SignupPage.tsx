@@ -1,9 +1,22 @@
 import React, { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { BrandLogo } from '@/components/brand/BrandLogo';
 import { GoogleAuthButton } from '@/components/auth/GoogleAuthButton';
+import { useAuth } from '@/features/auth/AuthProvider';
+import { getSafeReturnPath } from '@/features/auth/routing/returnPath';
+
+const authMessage = (code: string): string => {
+  if (code === 'EMAIL_ALREADY_REGISTERED') return 'REGISTRATION FAILED\nAn account already exists for this email address.';
+  if (code === 'NETWORK_ERROR' || code === 'AUTH_SERVICE_UNAVAILABLE') return 'AUTHENTICATION SERVICE UNAVAILABLE\nTry again when connectivity is restored.';
+  if (code === 'GOOGLE_AUTH_CANCELLED') return 'GOOGLE AUTHENTICATION CANCELLED\nNo account changes were made.';
+  if (code === 'GOOGLE_AUTH_FAILED') return 'GOOGLE AUTHENTICATION FAILED\nTry again or continue with email.';
+  return 'REGISTRATION ERROR\nThe authentication service could not complete the request.';
+};
 
 export function SignupPage() {
+  const navigate = useNavigate();
+  const location = useLocation();
+  const { isMockMode, registerWithEmailPassword, loginWithGoogle } = useAuth();
   // Controlled inputs
   const [fullName, setFullName] = useState('');
   const [email, setEmail] = useState('');
@@ -115,7 +128,19 @@ export function SignupPage() {
     }
   };
 
-  const handleGoogleClick = () => {
+  const handleGoogleClick = async () => {
+    if (isSubmitting) return;
+    if (!isMockMode) {
+      setIsSubmitting(true);
+      setSubmitMessage('');
+      const result = await loginWithGoogle(getSafeReturnPath((location.state as { returnPath?: unknown } | null)?.returnPath));
+      if (!result.ok) {
+        setIsSubmitting(false);
+        setSubmitMessage(authMessage(result.error.code));
+        setAnnouncement(authMessage(result.error.code).replace('\n', '. '));
+      }
+      return;
+    }
     setSubmitMessage(
       'GOOGLE AUTHENTICATION NOT CONNECTED\nGoogle account registration will be enabled during backend integration.'
     );
@@ -124,7 +149,7 @@ export function SignupPage() {
     );
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
     const fnErr = validateFullName(fullName);
@@ -145,7 +170,19 @@ export function SignupPage() {
 
     setIsSubmitting(true);
     setSubmitMessage('');
-    setAnnouncement('Validating registration details locally...');
+    setAnnouncement(isMockMode ? 'Validating registration details locally...' : 'Creating account securely...');
+
+    if (!isMockMode) {
+      const result = await registerWithEmailPassword(email, password);
+      if (result.ok) {
+        navigate('/verify-email', { state: { email: result.value.email } });
+      } else {
+        setIsSubmitting(false);
+        setSubmitMessage(authMessage(result.error.code));
+        setAnnouncement(authMessage(result.error.code).replace('\n', '. '));
+      }
+      return;
+    }
 
     setTimeout(() => {
       setIsSubmitting(false);

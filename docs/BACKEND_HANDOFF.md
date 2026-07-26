@@ -48,6 +48,23 @@ The approved authentication configuration has now been pushed to Base44 and veri
 
 The next phase is live authentication UI integration.
 
+## 00C / Backend Phase 02C Live Auth Integration
+
+Phase 02C connects the frozen authentication surfaces to the existing Base44 foundation while preserving mock mode.
+
+- **Provider:** `src/features/auth/AuthProvider.tsx`; exposes the typed session state and authentication actions through `useAuth()`.
+- **Gateway:** `Base44AuthGateway` now supports Base44-managed Google provider login in addition to email/password and OTP operations.
+- **Login and Signup:** `src/pages/LoginPage.tsx` and `src/pages/SignupPage.tsx` delegate live-mode actions without changing their approved mock-mode presentation.
+- **OTP:** `/verify-email` is available for the verification-required registration result; passwords and OTP values remain transient.
+- **Route guards:** `src/features/auth/AuthRouteGuards.tsx`, applied by `RootLayout`, protects `/app` routes and redirects authenticated users away from Login, Signup, and verification pages.
+- **Return paths:** `src/features/auth/routing/returnPath.ts` accepts only internal `/app` paths and falls back safely to `/app`.
+- **Logout:** Live-mode Sign Out delegates to the gateway and clears local session state; mock mode remains unchanged.
+- **Session restoration:** The provider restores once at application startup and distinguishes authenticated, unauthenticated, unavailable, and recoverable error states.
+- **Manual verification:** Browser automation was unavailable in this environment, so real email/OTP and Google consent flows remain pending external verification.
+- **Not implemented:** Organization, Membership, tenant authorization, incident permissions, entities, backend functions, realtime, and DeepSeek integration.
+
+The next phase is session completion and onboarding boundary work.
+
 ---
 
 ## 01 / Frontend Freeze Status

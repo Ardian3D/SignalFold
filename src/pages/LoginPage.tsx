@@ -1,11 +1,23 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { BrandLogo } from '@/components/brand/BrandLogo';
 import { GoogleAuthButton } from '@/components/auth/GoogleAuthButton';
 import { Eye, EyeOff } from 'lucide-react';
+import { useAuth } from '@/features/auth/AuthProvider';
+import { getSafeReturnPath } from '@/features/auth/routing/returnPath';
+
+const authMessage = (code: string): string => {
+  if (code === 'INVALID_CREDENTIALS') return 'AUTHENTICATION FAILED\nThe supplied credentials could not be verified.';
+  if (code === 'NETWORK_ERROR' || code === 'AUTH_SERVICE_UNAVAILABLE') return 'AUTHENTICATION SERVICE UNAVAILABLE\nTry again when connectivity is restored.';
+  if (code === 'GOOGLE_AUTH_CANCELLED') return 'GOOGLE AUTHENTICATION CANCELLED\nNo account changes were made.';
+  if (code === 'GOOGLE_AUTH_FAILED') return 'GOOGLE AUTHENTICATION FAILED\nTry again or continue with email.';
+  return 'AUTHENTICATION ERROR\nThe authentication service could not complete the request.';
+};
 
 export function LoginPage() {
   const navigate = useNavigate();
+  const location = useLocation();
+  const { isMockMode, loginWithEmailPassword, loginWithGoogle } = useAuth();
   
   // Controlled inputs
   const [email, setEmail] = useState('');
@@ -23,13 +35,25 @@ export function LoginPage() {
   // Live region announcement
   const [announcement, setAnnouncement] = useState('');
 
-  const handleGoogleClick = () => {
-    setSubmitMessage(
-      'GOOGLE AUTHENTICATION NOT CONNECTED\nGoogle account access will be enabled during backend integration.'
-    );
-    setAnnouncement(
-      'GOOGLE AUTHENTICATION NOT CONNECTED. Google account access will be enabled during backend integration.'
-    );
+  const handleGoogleClick = async () => {
+    if (isSubmitting) return;
+    if (isMockMode) {
+      setSubmitMessage(
+        'GOOGLE AUTHENTICATION NOT CONNECTED\nGoogle account access will be enabled during backend integration.'
+      );
+      setAnnouncement(
+        'GOOGLE AUTHENTICATION NOT CONNECTED. Google account access will be enabled during backend integration.'
+      );
+      return;
+    }
+    setIsSubmitting(true);
+    setSubmitMessage('');
+    const result = await loginWithGoogle(getSafeReturnPath((location.state as { returnPath?: unknown } | null)?.returnPath));
+    if (!result.ok) {
+      setIsSubmitting(false);
+      setSubmitMessage(authMessage(result.error.code));
+      setAnnouncement(authMessage(result.error.code).replace('\n', '. '));
+    }
   };
 
   useEffect(() => {
@@ -74,7 +98,7 @@ export function LoginPage() {
     }
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
     const eErr = validateEmail(email);
@@ -91,7 +115,20 @@ export function LoginPage() {
 
     setIsSubmitting(true);
     setSubmitMessage('');
-    setAnnouncement('Validating credentials locally...');
+    setAnnouncement(isMockMode ? 'Validating credentials locally...' : 'Verifying credentials...');
+
+    if (!isMockMode) {
+      const result = await loginWithEmailPassword(email, password);
+      if (result.ok) {
+        navigate(getSafeReturnPath((location.state as { returnPath?: unknown } | null)?.returnPath));
+      } else {
+        setIsSubmitting(false);
+        if (result.error.code === 'INVALID_CREDENTIALS') setPassword('');
+        setSubmitMessage(authMessage(result.error.code));
+        setAnnouncement(authMessage(result.error.code).replace('\n', '. '));
+      }
+      return;
+    }
 
     // Simulate standard operational processing delay
     setTimeout(() => {

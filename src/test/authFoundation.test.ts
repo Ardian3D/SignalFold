@@ -14,6 +14,7 @@ const authMock = {
   verifyOtp: vi.fn(),
   resendOtp: vi.fn(),
   logout: vi.fn(),
+  loginWithProvider: vi.fn(),
 };
 const getBase44ClientMock = vi.fn((input?: Base44RuntimeConfig) => input?.isConfigured ? { auth: authMock } : null);
 
@@ -118,6 +119,12 @@ describe('Base44 auth gateway', () => {
     expect(authMock.loginViaEmailPassword).toHaveBeenCalledWith('operator@example.test', 'submitted-secret');
     expect(result).toEqual({ ok: true, value: { id: 'user-1', email: 'operator@example.test', displayName: 'Test Operator', emailVerified: true } });
     expect(JSON.stringify(result)).not.toContain('secret');
+  });
+
+  it('starts Google OAuth through the Base44-managed provider without handling tokens', async () => {
+    authMock.loginWithProvider.mockReturnValue(undefined);
+    await expect(gateway.loginWithGoogle('/app/incidents')).resolves.toEqual({ ok: true, value: undefined });
+    expect(authMock.loginWithProvider).toHaveBeenCalledWith('google', '/app/incidents');
   });
 
   it('normalizes invalid credentials without returning the password', async () => {

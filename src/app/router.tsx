@@ -5,6 +5,7 @@ import { DesignSystemPage } from '@/pages/DesignSystemPage';
 import { NotFoundPage } from '@/pages/NotFoundPage';
 import { LoginPage } from '@/pages/LoginPage';
 import { SignupPage } from '@/pages/SignupPage';
+import { VerifyEmailPage } from '@/pages/VerifyEmailPage';
 import { OnboardingPage } from '@/pages/OnboardingPage';
 import { RootLayout } from '@/components/layout/RootLayout';
 import { AppShell } from '@/layouts/AppShell';
@@ -59,6 +60,14 @@ export const router = createBrowserRouter([
     element: (
       <RootLayout>
         <SignupPage />
+      </RootLayout>
+    ),
+  },
+  {
+    path: '/verify-email',
+    element: (
+      <RootLayout>
+        <VerifyEmailPage />
       </RootLayout>
     ),
   },

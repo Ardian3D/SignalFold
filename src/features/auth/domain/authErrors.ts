@@ -8,6 +8,8 @@ export type AuthErrorCode =
   | 'NETWORK_ERROR'
   | 'AUTH_SERVICE_UNAVAILABLE'
   | 'SESSION_EXPIRED'
+  | 'GOOGLE_AUTH_CANCELLED'
+  | 'GOOGLE_AUTH_FAILED'
   | 'AUTH_UNAVAILABLE'
   | 'UNKNOWN_AUTH_ERROR';
 
@@ -41,6 +43,12 @@ export function normalizeAuthError(error: unknown, fallback: AuthErrorCode = 'UN
 
   if (/session expired|expired session/.test(text)) {
     return { code: 'SESSION_EXPIRED', retryable: false };
+  }
+  if (/cancel|cancelled|canceled|user denied/.test(text)) {
+    return { code: 'GOOGLE_AUTH_CANCELLED', retryable: false };
+  }
+  if (/google|oauth|provider/.test(text)) {
+    return { code: 'GOOGLE_AUTH_FAILED', retryable: true };
   }
   if (details.status === 401 || /invalid credential|invalid password|incorrect password|unauthorized/.test(text)) {
     return { code: 'INVALID_CREDENTIALS', retryable: false };
