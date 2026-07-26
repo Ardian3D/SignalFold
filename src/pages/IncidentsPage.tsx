@@ -4,6 +4,7 @@ import { useFeedbackState } from '@/context/FeedbackStateContext';
 import { Base44EmptyBoundary } from '@/features/organization/OrganizationReadBoundaries';
 import { useOrganization } from '@/features/organization/OrganizationProvider';
 import { RouteFeedbackState } from '@/components/feedback/RouteFeedbackState';
+import { LiveIncidents } from '@/features/operations/OperationalViews';
 
 export interface IncidentRecord {
   code: string;
@@ -70,7 +71,7 @@ export const mockIncidents: IncidentRecord[] = [
  */
 export function IncidentsPage() {
   const { isMockMode } = useOrganization();
-  if (!isMockMode) return <Base44EmptyBoundary title="ACTIVE ORGANIZATION / INCIDENTS NOT LOADED" />;
+  if (!isMockMode) return <LiveIncidents />;
   const [searchParams, setSearchParams] = useSearchParams();
   const { getFeedbackState } = useFeedbackState();
   const feedback = getFeedbackState('incidents');

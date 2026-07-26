@@ -1,0 +1,2 @@
+import { createClientFromRequest } from 'npm:@base44/sdk'; import { authorize, failure, json, safeService } from './operations.ts';
+Deno.serve(async req => { try { const b=createClientFromRequest(req), i=await req.json(), a=await authorize(b,i.organizationId); const rows=await b.asServiceRole.entities.Service.filter({ organization_id:a.organizationId }); return json({services:rows.filter((x:any)=>i.includeInactive===true||x.is_active===true).slice(0,200).map(safeService)}); } catch(e){ return failure(e); } });

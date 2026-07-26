@@ -25,6 +25,8 @@ import { useAiOperation } from '@/context/AiOperationContext';
 import { AiOperationFeedback } from '@/components/feedback/AiOperationFeedback';
 import { useFeedbackState } from '@/context/FeedbackStateContext';
 import { RouteFeedbackState } from '@/components/feedback/RouteFeedbackState';
+import { useOrganization } from '@/features/organization/OrganizationProvider';
+import { LiveIncidentRoom } from '@/features/operations/OperationalViews';
 
 type MobileTab = 'TIMELINE' | 'TASKS' | 'DETAILS';
 
@@ -40,6 +42,8 @@ export interface TaskLifecycleState {
 }
 
 export function IncidentRoomPage() {
+  const { isMockMode } = useOrganization();
+  if (!isMockMode) return <LiveIncidentRoom />;
   const { getFeedbackState } = useFeedbackState();
   const feedback = getFeedbackState('incident-room');
 

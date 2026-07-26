@@ -1,11 +1,15 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
+import { useOrganization } from '@/features/organization/OrganizationProvider';
+import { LiveCreateIncident } from '@/features/operations/OperationalViews';
 
 /**
  * SignalFold — Create Incident Page Component.
  * Full operational frontend with asymmetric desktop/tablet layout and complete validation controls.
  */
 export function CreateIncidentPage() {
+  const { isMockMode } = useOrganization();
+  if (!isMockMode) return <LiveCreateIncident />;
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [service, setService] = useState('');

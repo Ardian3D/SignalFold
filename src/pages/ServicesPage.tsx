@@ -2,12 +2,17 @@ import { useSearchParams, useNavigate } from 'react-router-dom';
 import { useFeedbackState } from '@/context/FeedbackStateContext';
 import { RouteFeedbackState } from '@/components/feedback/RouteFeedbackState';
 import { Server, Lock, ExternalLink, Database, History, HelpCircle } from 'lucide-react';
+import { useOrganization } from '@/features/organization/OrganizationProvider';
+import { LiveServices } from '@/features/operations/OperationalViews';
 
 export function ServicesPage() {
+  const { isMockMode } = useOrganization();
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const { getFeedbackState } = useFeedbackState();
   const feedback = getFeedbackState('services');
+
+  if (!isMockMode) return <LiveServices />;
 
   if (feedback && feedback.isActive) {
     return (
