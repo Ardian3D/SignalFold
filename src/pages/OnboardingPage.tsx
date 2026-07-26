@@ -1,12 +1,15 @@
 import React, { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { BrandLogo } from '@/components/brand/BrandLogo';
 import { useAuth } from '@/features/auth/AuthProvider';
+import { useOrganization } from '@/features/organization/OrganizationProvider';
 
 type SetupPath = 'create' | 'join';
 
 export function OnboardingPage() {
   const { isMockMode } = useAuth();
+  const navigate = useNavigate();
+  const { completeOnboarding } = useOrganization();
   const [currentStep, setCurrentStep] = useState<1 | 2 | 3>(1);
 
   // Entry status state for Step 3 Workspace entry
@@ -1142,7 +1145,28 @@ export function OnboardingPage() {
                   onClick={() => {
                     if (!isMockMode) {
                       setEntryStatus('not-connected');
-                      setAnnouncement('ORGANIZATION SETUP NOT CONNECTED. Organization and membership persistence begins in Backend Phase 03.');
+                      setSubmitMessage('');
+                      setAnnouncement('Creating the organization workspace...');
+                      // Keep the existing feedback surface visible while the authoritative request is pending.
+                      void completeOnboarding({
+                        displayName: undefined,
+                        organizationName: organizationName.trim(),
+                        defaultTimezone: 'UTC',
+                        incidentPrefix: 'SF',
+                        useCase: primaryUseCase,
+                        displayTitle: teamOrFunction.trim() || undefined,
+                        requestId: typeof crypto.randomUUID === 'function' ? crypto.randomUUID() : `${Date.now()}-${Math.random()}`,
+                      }).then((completed) => {
+                        if (completed) {
+                          setEntryStatus('idle');
+                          setAnnouncement('Organization workspace created. Entering SignalFold.');
+                          navigate('/app', { replace: true });
+                        } else {
+                          setEntryStatus('not-connected');
+                          setSubmitMessage('Organization setup could not be completed. Your entries remain available for retry.');
+                          setAnnouncement('Organization setup could not be completed. Please retry.');
+                        }
+                      });
                       return;
                     }
                     setEntryStatus('preparing');

@@ -27,5 +27,13 @@
     },
     "allowImportingTsExtensions": true,
     "noEmit": true
-  }
+  },
+  "exclude": [
+    "base44/functions"
+  ],
+  "include": [
+    "src",
+    "vite.config.ts",
+    "base44/.types/*.d.ts"
+  ]
 }

@@ -1,0 +1,18 @@
+{
+  "name": "User",
+  "type": "object",
+  "properties": {
+    "avatar_url": { "type": "string", "format": "uri" },
+    "timezone": { "type": "string", "maxLength": 64 },
+    "default_organization_id": { "type": "string", "maxLength": 128 },
+    "onboarding_completed": { "type": "boolean", "default": false },
+    "preferences": {
+      "type": "object",
+      "properties": {
+        "density": { "type": "string", "enum": ["comfortable", "compact"] },
+        "notifications_enabled": { "type": "boolean" }
+      }
+    }
+  },
+  "rls": { "create": false, "read": false, "update": false, "delete": false }
+}

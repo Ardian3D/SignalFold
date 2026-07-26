@@ -1,0 +1,25 @@
+{
+  "name": "Organization",
+  "type": "object",
+  "properties": {
+    "name": { "type": "string", "minLength": 2, "maxLength": 100 },
+    "slug": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$" },
+    "logo_url": { "type": "string", "format": "uri" },
+    "default_timezone": { "type": "string", "minLength": 1 },
+    "incident_prefix": { "type": "string", "pattern": "^[A-Z0-9]{2,8}$", "default": "SF" },
+    "public_status_enabled": { "type": "boolean", "default": false },
+    "public_status_title": { "type": "string", "maxLength": 120 },
+    "public_status_description": { "type": "string", "maxLength": 1000 },
+    "created_by_user_id": { "type": "string" },
+    "is_demo": { "type": "boolean", "default": false },
+    "settings": {
+      "type": "object",
+      "properties": {
+        "use_case": { "type": "string", "maxLength": 120 },
+        "display_title": { "type": "string", "maxLength": 80 }
+      }
+    }
+  },
+  "required": ["name", "slug", "default_timezone", "incident_prefix", "public_status_enabled", "created_by_user_id", "is_demo"],
+  "rls": { "create": false, "read": false, "update": false, "delete": false }
+}

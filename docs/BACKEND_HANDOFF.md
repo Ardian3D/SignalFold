@@ -249,3 +249,18 @@ The following sequence guarantees a stable incremental build with minimized regr
 14. **14 / Postmortem Generation and Versioning:** Integrate draft, approval, and version planning states.
 15. **15 / Error Handling and Observability:** Roll out telemetry logs and API error boundary handling.
 16. **16 / Final E2E and Deployment:** Conduct final regression runs and deploy to production containers.
+
+## 09 / Major Phase 03 — Organization, Membership, and Tenant Context
+
+Phase 03 is implemented and hosted-runtime verified on `backend/base44-phase-03-org-membership`.
+
+- Organization, Membership, and the supported built-in User extension live in `base44/entities/`. Direct Organization and Membership client CRUD is deny-by-default; `User.role` is never used as SignalFold authority.
+- Server-authoritative onboarding and context operations are in `base44/functions/complete-organization-onboarding`, `resolve-organization-context`, `select-active-organization`, and `list-organization-members`.
+- The framework-neutral organization domain, gateway, provider, route guards, and capability presentation model live under `src/features/organization/`.
+- Authentication remains identity-only. SignalFold role is read only from an active Membership; Base44 `User.role` is not used.
+- Mock mode retains the approved Northstar demo organization and canonical records. Base44 mode is separated from mock incident/service data and requires an active organization context.
+- Onboarding creates an Organization and creator Admin Membership only through the server workflow, with safe retry/reconciliation behavior. No Service, Incident, invitation, or demo seed resources are included.
+- Team and Settings integration remains read-only at this boundary. Full invitation, role mutation, services, incidents, and dashboard backend work remain later phases.
+- Organization, Membership, the User extension, and the four targeted organization functions were deployed without a full Base44 deployment. The site-only deployment passed hosted verification for onboarding, active Admin Membership restoration, AppShell identity, Team, Settings, real-data empty boundaries, logout/session behavior, responsive presentation, and mock-data isolation.
+- The final automated baseline is 38 test files and 300 tests, passing twice consecutively. Shared test teardown now clears rendered DOM, timers, and spies after every test to prevent cross-test timing leakage without increasing test timeouts.
+- Phase 04 remains responsible for Services, Dashboard metrics, Incidents, tasks, timeline, demo seed data, realtime, AI, and Postmortem backend resources.

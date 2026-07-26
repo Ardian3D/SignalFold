@@ -1,0 +1,15 @@
+{
+  "name": "Membership",
+  "type": "object",
+  "properties": {
+    "organization_id": { "type": "string" },
+    "user_id": { "type": "string" },
+    "role": { "type": "string", "enum": ["reporter", "responder", "incident_manager", "admin"] },
+    "status": { "type": "string", "enum": ["invited", "active", "suspended"] },
+    "invited_by_user_id": { "type": "string" },
+    "joined_at": { "type": "string", "format": "date-time" },
+    "display_title": { "type": "string", "maxLength": 80 }
+  },
+  "required": ["organization_id", "user_id", "role", "status"],
+  "rls": { "create": false, "read": false, "update": false, "delete": false }
+}
