@@ -18,6 +18,36 @@ The Phase 01B foundation is established with a basic backend-only Base44 project
 
 The next phase is authentication and session foundation.
 
+## 00A / Backend Phase 02A Auth Foundation
+
+Phase 02A prepares authentication locally without changing the frozen Login or Signup UI.
+
+- **Local auth configuration:** `base44/auth/config.jsonc`; email/password is enabled locally. The existing Google provider setting was preserved, while Microsoft, Facebook, Apple, and SSO remain disabled.
+- **Remote state:** The local auth configuration has not been pushed and no deployment occurred.
+- **Contracts and adapters:** `src/features/auth/domain`, `ports/AuthGateway.ts`, `adapters/Base44AuthGateway.ts`, and `adapters/MockAuthGateway.ts`.
+- **Gateway selection:** `src/features/auth/authGateway.ts`; mock mode remains the default and Base44 mode without configuration returns a controlled unavailable result.
+- **Session state:** `src/features/auth/session/authSessionMachine.ts` distinguishes uninitialized, restoring, authenticated, unauthenticated, unavailable, and recoverable error states.
+- **Error normalization:** `src/features/auth/domain/authErrors.ts` maps authentication failures to safe typed codes without exposing SDK responses or credentials.
+- **Token ownership:** Authentication tokens remain managed by the Base44 SDK. SignalFold does not read, persist, or expose them.
+- **Role boundary:** Base44 `User.role` is not mapped to SignalFold organization authority. Organization roles require the future Membership layer.
+- **Not wired yet:** Login, Signup, OTP UI, logout controls, route guards, Organization, Membership, tenant authorization, entities, functions, realtime, and DeepSeek integration.
+
+The next phase is live authentication UI wiring and route guards.
+
+## 00B / Backend Phase 02B Remote Auth Activation
+
+The approved authentication configuration has now been pushed to Base44 and verified by pulling it back from the remote project.
+
+- **Email/password:** Enabled remotely.
+- **Google OAuth:** Enabled remotely using Base44-managed default OAuth credentials.
+- **Custom OAuth credentials:** None; no Google client ID or secret is configured.
+- **Other providers:** Microsoft, Facebook, Apple, and SSO remain disabled.
+- **Remote operation:** Only the authentication configuration was pushed. No user was created and no deployment occurred.
+- **Frontend status:** Login, Signup, Google login UI, route guards, and session-provider wiring remain intentionally unconnected.
+- **Authorization boundary:** Authentication does not establish organization membership, tenant access, or SignalFold role authority. Organization and Membership remain unimplemented.
+
+The next phase is live authentication UI integration.
+
 ---
 
 ## 01 / Frontend Freeze Status
