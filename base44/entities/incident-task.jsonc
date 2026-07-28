@@ -1,0 +1,27 @@
+{
+  "name": "IncidentTask",
+  "type": "object",
+  "properties": {
+    "organization_id": { "type": "string" },
+    "incident_id": { "type": "string" },
+    "title": { "type": "string", "minLength": 3, "maxLength": 160 },
+    "description": { "type": "string", "maxLength": 2000 },
+    "priority": { "type": "string", "enum": ["critical", "high", "medium", "low"] },
+    "status": { "type": "string", "enum": ["todo", "in_progress", "blocked", "done", "cancelled"] },
+    "assignee_user_id": { "type": "string" },
+    "created_by_user_id": { "type": "string" },
+    "source": { "type": "string", "enum": ["human", "ai", "system"] },
+    "order_index": { "type": "number" },
+    "due_at": { "type": "string", "format": "date-time" },
+    "claimed_at": { "type": "string", "format": "date-time" },
+    "completed_at": { "type": "string", "format": "date-time" },
+    "blocking_reason": { "type": "string", "maxLength": 1000 },
+    "completion_note": { "type": "string", "maxLength": 2000 },
+    "ai_run_id": { "type": "string", "maxLength": 128 },
+    "is_demo": { "type": "boolean", "default": false },
+    "request_id": { "type": "string", "maxLength": 128 }
+  },
+  "required": ["organization_id", "incident_id", "title", "priority", "status", "source", "order_index", "is_demo"],
+  "rls": { "create": false, "read": false, "update": false, "delete": false }
+}
+

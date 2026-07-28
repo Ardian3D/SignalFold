@@ -54,7 +54,10 @@ const makeBase44 = () => {
       entities: {
         Incident: { filter: vi.fn().mockResolvedValue([]), create: failWrite, update: failWrite, delete: failWrite },
         Service: { filter: vi.fn().mockResolvedValue([]), create: failWrite, update: failWrite, delete: failWrite },
+        IncidentTask: { filter: vi.fn().mockResolvedValue([]), create: failWrite, update: failWrite, delete: failWrite },
         IncidentUpdate: { filter: vi.fn().mockResolvedValue([...updates]), create: failWrite, update: failWrite, delete: failWrite },
+        Membership: { filter: vi.fn().mockResolvedValue([]), create: failWrite, update: failWrite, delete: failWrite },
+        User: { get: vi.fn(), create: failWrite, update: failWrite, delete: failWrite },
       },
     },
     failWrite,
@@ -68,6 +71,7 @@ describe('Phase 04 Dashboard read path', () => {
     const result = await loadDashboardReadModel(base44, 'org-1');
     expect(result.activity).toHaveLength(1);
     expect(result.activity[0].id).toBe('update-1');
+    expect(result.taskSummary).toMatchObject({ total: 0, todo: 0, inProgress: 0, blocked: 0 });
     expect(updates).toHaveLength(before);
     expect(base44.failWrite).not.toHaveBeenCalled();
   });
@@ -76,6 +80,7 @@ describe('Phase 04 Dashboard read path', () => {
     const base44 = makeBase44();
     for (let index = 0; index < 5; index += 1) await loadDashboardReadModel(base44, 'org-1');
     expect(base44.asServiceRole.entities.IncidentUpdate.filter).toHaveBeenCalledTimes(5);
+    expect(base44.asServiceRole.entities.IncidentTask.filter).toHaveBeenCalledTimes(5);
     expect(base44.failWrite).not.toHaveBeenCalled();
   });
 
@@ -83,6 +88,7 @@ describe('Phase 04 Dashboard read path', () => {
     const base44 = makeBase44();
     await Promise.all(Array.from({ length: 5 }, () => loadDashboardReadModel(base44, 'org-1')));
     expect(base44.asServiceRole.entities.IncidentUpdate.filter).toHaveBeenCalledTimes(5);
+    expect(base44.asServiceRole.entities.IncidentTask.filter).toHaveBeenCalledTimes(5);
     expect(base44.failWrite).not.toHaveBeenCalled();
   });
 

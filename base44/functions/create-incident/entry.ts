@@ -22,27 +22,8 @@ const findCreation = async (base44: any, organizationId: string, incidentId: str
 
 const appendCreation = async (base44: any, access: any, incident: any) => {
   if (await findCreation(base44, access.organizationId, incident.id)) {
-    console.log(
-      JSON.stringify({
-        function: 'create-incident',
-        operation: 'WRITE',
-        incidentUpdatesLoaded: 1,
-        incidentUpdatesReturned: 1,
-        createAttempted: false,
-      }),
-    );
     return;
   }
-
-  console.log(
-    JSON.stringify({
-      function: 'create-incident',
-      operation: 'WRITE',
-      incidentUpdatesLoaded: 0,
-      incidentUpdatesReturned: 1,
-      createAttempted: true,
-    }),
-  );
 
   await base44.asServiceRole.entities.IncidentUpdate.create({
     organization_id: access.organizationId,
@@ -52,9 +33,10 @@ const appendCreation = async (base44: any, access: any, incident: any) => {
     actor_type: 'user',
     visibility: 'internal',
     message: `Incident ${incident.code} was reported.`,
-    metadata: { code: incident.code, status: 'reported', severity: incident.severity },
+    metadata: { code: incident.code, status: 'reported', severity: incident.severity, request_id: requestId(incident.request_id ?? '') ?? undefined },
     occurred_at: incident.reported_at,
     is_demo: false,
+    request_id: requestId(incident.request_id ?? '') ?? undefined,
   });
 };
 
@@ -71,15 +53,6 @@ Deno.serve(async (req) => {
       request_id: rid,
     });
     if (prior[0]) {
-      console.log(
-        JSON.stringify({
-          function: 'create-incident',
-          operation: 'WRITE',
-          incidentUpdatesLoaded: 0,
-          incidentUpdatesReturned: 0,
-          createAttempted: false,
-        }),
-      );
       return json({ incident: safeIncident(prior[0]), reconciled: true });
     }
 

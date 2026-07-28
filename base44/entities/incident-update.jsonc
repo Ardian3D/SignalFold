@@ -4,14 +4,15 @@
   "properties": {
     "organization_id": { "type": "string" },
     "incident_id": { "type": "string" },
-    "event_type": { "type": "string", "enum": ["incident_created", "incident_seeded", "incident_acknowledged", "status_changed", "severity_changed", "commander_assigned", "internal_note_added", "public_update_published", "incident_resolved", "incident_closed", "incident_reopened"] },
+    "event_type": { "type": "string", "enum": ["incident_created", "incident_seeded", "incident_acknowledged", "status_changed", "severity_changed", "commander_assigned", "internal_note_added", "public_update_published", "incident_resolved", "incident_closed", "incident_reopened", "task_created", "task_assigned", "task_reassigned", "task_claimed", "task_unclaimed", "task_updated", "task_blocked", "task_unblocked", "task_completed", "task_cancelled"] },
     "actor_user_id": { "type": "string" },
     "actor_type": { "type": "string", "enum": ["user", "system", "ai"] },
     "visibility": { "type": "string", "enum": ["internal", "public"] },
     "message": { "type": "string", "minLength": 1, "maxLength": 1000 },
-    "metadata": { "type": "object", "properties": { "code": { "type": "string", "maxLength": 32 }, "status": { "type": "string", "maxLength": 32 }, "severity": { "type": "string", "maxLength": 8 } } },
+    "metadata": { "type": "object", "properties": { "code": { "type": "string", "maxLength": 32 }, "status": { "type": "string", "maxLength": 32 }, "severity": { "type": "string", "maxLength": 8 }, "task_id": { "type": "string", "maxLength": 128 }, "task_title": { "type": "string", "maxLength": 160 }, "priority": { "type": "string", "maxLength": 16 }, "assignee_user_id": { "type": "string", "maxLength": 128 }, "previous_assignee_user_id": { "type": "string", "maxLength": 128 }, "blocking_reason": { "type": "string", "maxLength": 1000 }, "completion_note": { "type": "string", "maxLength": 2000 }, "request_id": { "type": "string", "maxLength": 128 } } },
     "occurred_at": { "type": "string", "format": "date-time" },
-    "is_demo": { "type": "boolean", "default": false }
+    "is_demo": { "type": "boolean", "default": false },
+    "request_id": { "type": "string", "maxLength": 128 }
   },
   "required": ["organization_id", "incident_id", "event_type", "actor_type", "visibility", "message", "occurred_at", "is_demo"],
   "rls": { "create": false, "read": false, "update": false, "delete": false }

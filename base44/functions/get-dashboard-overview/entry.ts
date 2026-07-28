@@ -1,23 +1,14 @@
 import { createClientFromRequest } from 'npm:@base44/sdk';
-import { authorize, failure, json, safeIncident } from './operations.ts';
+import { authorizeActiveMembership, failure, json } from './coordination.ts';
 import { loadDashboardReadModel } from './read-model.ts';
+import { safeIncident } from './operations.ts';
 
 Deno.serve(async (req) => {
   try {
     const base44 = createClientFromRequest(req);
     const input = await req.json();
-    const access = await authorize(base44, input.organizationId);
-    const { incidents, services, rawUpdates, activity } = await loadDashboardReadModel(base44, access.organizationId);
-
-    console.log(
-      JSON.stringify({
-        function: 'get-dashboard-overview',
-        operation: 'READ',
-        incidentUpdatesLoaded: rawUpdates.length,
-        incidentUpdatesReturned: activity.length,
-        createAttempted: false,
-      }),
-    );
+    const access = await authorizeActiveMembership(base44, input.organizationId);
+    const { incidents, services, activity, teamLoad, taskSummary } = await loadDashboardReadModel(base44, access.organizationId);
 
     const active = incidents.filter((incident: any) => !['resolved', 'closed'].includes(incident.status));
     const resolved = incidents.filter((incident: any) => incident.status === 'resolved' || incident.status === 'closed');
@@ -36,8 +27,9 @@ Deno.serve(async (req) => {
     return json({
       activeIncidentsCount: active.length,
       sev1Sev2Active: active.filter((incident: any) => ['SEV1', 'SEV2'].includes(incident.severity)).length,
-      openTasks: null,
-      taskDataAvailable: false,
+      openTasks: taskSummary.todo + taskSummary.inProgress + taskSummary.blocked,
+      taskDataAvailable: true,
+      taskSummary,
       resolvedThisWeek: resolved.filter((incident: any) => Date.now() - Date.parse(incident.resolved_at || incident.closed_at) < 604800000).length,
       averageTimeToAcknowledge: average(incidents, 'acknowledged_at'),
       averageTimeToResolve: average(resolved, 'resolved_at'),
@@ -49,6 +41,7 @@ Deno.serve(async (req) => {
       recentActivity: activity,
       recentIncidents: incidents.slice(0, 10).map(safeIncident),
       serviceSummary,
+      teamLoad,
       quickCreateCapability: true,
       demoWorkspaceState: { isDemo: false, canSeed: access.membership.role === 'admin' },
     });
