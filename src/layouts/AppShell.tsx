@@ -172,7 +172,7 @@ function AppShellContent({ children }: AppShellProps) {
               <Link
                 to="/app"
                 aria-current="page"
-                className="flex items-center justify-between px-3 py-2 text-xs font-mono font-bold text-[#D6FF3F] bg-[#141513] border border-[#242522] focus-visible:outline-2 focus-visible:outline-[#4B78FF] rounded-[2px] w-full"
+                className="flex items-center justify-between px-3 py-2 text-xs font-mono font-bold text-[#D6FF3F] bg-[#141513] border border-[#242522] focus-visible:outline-2 focus-visible:outline-[#4B78FF] rounded-[2px] w-full cursor-pointer"
                 style={{ fontFamily: 'var(--font-technical)' }}
               >
                 <span className="flex items-center gap-2">
@@ -184,7 +184,7 @@ function AppShellContent({ children }: AppShellProps) {
             ) : (
               <Link
                 to="/app"
-                className="flex items-center justify-between px-3 py-2 text-xs font-mono font-bold text-[#A8AAA3] hover:text-[#D6FF3F] hover:bg-[#141513]/40 border border-transparent focus-visible:outline-2 focus-visible:outline-[#4B78FF] rounded-[2px] w-full"
+                className="flex items-center justify-between px-3 py-2 text-xs font-mono font-bold text-[#A8AAA3] hover:text-[#D6FF3F] hover:bg-[#141513]/40 border border-transparent focus-visible:outline-2 focus-visible:outline-[#4B78FF] rounded-[2px] w-full cursor-pointer"
                 style={{ fontFamily: 'var(--font-technical)' }}
               >
                 <span className="flex items-center gap-2">
@@ -197,7 +197,7 @@ function AppShellContent({ children }: AppShellProps) {
               <Link
                 to="/app/incidents"
                 aria-current="page"
-                className="flex items-center justify-between px-3 py-2 text-xs font-mono font-bold text-[#D6FF3F] bg-[#141513] border border-[#242522] focus-visible:outline-2 focus-visible:outline-[#4B78FF] rounded-[2px] w-full"
+                className="flex items-center justify-between px-3 py-2 text-xs font-mono font-bold text-[#D6FF3F] bg-[#141513] border border-[#242522] focus-visible:outline-2 focus-visible:outline-[#4B78FF] rounded-[2px] w-full cursor-pointer"
                 style={{ fontFamily: 'var(--font-technical)' }}
               >
                 <span className="flex items-center gap-2">
@@ -209,7 +209,7 @@ function AppShellContent({ children }: AppShellProps) {
             ) : (
               <Link
                 to="/app/incidents"
-                className="flex items-center justify-between px-3 py-2 text-xs font-mono font-bold text-[#A8AAA3] hover:text-[#D6FF3F] hover:bg-[#141513]/40 border border-transparent focus-visible:outline-2 focus-visible:outline-[#4B78FF] rounded-[2px] w-full"
+                className="flex items-center justify-between px-3 py-2 text-xs font-mono font-bold text-[#A8AAA3] hover:text-[#D6FF3F] hover:bg-[#141513]/40 border border-transparent focus-visible:outline-2 focus-visible:outline-[#4B78FF] rounded-[2px] w-full cursor-pointer"
                 style={{ fontFamily: 'var(--font-technical)' }}
               >
                 <span className="flex items-center gap-2">
@@ -222,7 +222,7 @@ function AppShellContent({ children }: AppShellProps) {
               <Link
                 to="/app/services"
                 aria-current="page"
-                className="flex items-center justify-between px-3 py-2 text-xs font-mono font-bold text-[#D6FF3F] bg-[#141513] border border-[#242522] focus-visible:outline-2 focus-visible:outline-[#4B78FF] rounded-[2px] w-full"
+                className="flex items-center justify-between px-3 py-2 text-xs font-mono font-bold text-[#D6FF3F] bg-[#141513] border border-[#242522] focus-visible:outline-2 focus-visible:outline-[#4B78FF] rounded-[2px] w-full cursor-pointer"
                 style={{ fontFamily: 'var(--font-technical)' }}
               >
                 <span className="flex items-center gap-2">
@@ -234,7 +234,7 @@ function AppShellContent({ children }: AppShellProps) {
             ) : (
               <Link
                 to="/app/services"
-                className="flex items-center justify-between px-3 py-2 text-xs font-mono font-bold text-[#A8AAA3] hover:text-[#D6FF3F] hover:bg-[#141513]/40 border border-transparent focus-visible:outline-2 focus-visible:outline-[#4B78FF] rounded-[2px] w-full"
+                className="flex items-center justify-between px-3 py-2 text-xs font-mono font-bold text-[#A8AAA3] hover:text-[#D6FF3F] hover:bg-[#141513]/40 border border-transparent focus-visible:outline-2 focus-visible:outline-[#4B78FF] rounded-[2px] w-full cursor-pointer"
                 style={{ fontFamily: 'var(--font-technical)' }}
               >
                 <span className="flex items-center gap-2">
@@ -248,7 +248,7 @@ function AppShellContent({ children }: AppShellProps) {
               <Link
                 to="/app/team"
                 aria-current="page"
-                className="flex items-center justify-between px-3 py-2 text-xs font-mono font-bold text-[#D6FF3F] bg-[#141513] border border-[#242522] focus-visible:outline-2 focus-visible:outline-[#4B78FF] rounded-[2px] w-full"
+                className="flex items-center justify-between px-3 py-2 text-xs font-mono font-bold text-[#D6FF3F] bg-[#141513] border border-[#242522] focus-visible:outline-2 focus-visible:outline-[#4B78FF] rounded-[2px] w-full cursor-pointer"
                 style={{ fontFamily: 'var(--font-technical)' }}
               >
                 <span className="flex items-center gap-2">
@@ -260,7 +260,7 @@ function AppShellContent({ children }: AppShellProps) {
             ) : (
               <Link
                 to="/app/team"
-                className="flex items-center justify-between px-3 py-2 text-xs font-mono font-bold text-[#A8AAA3] hover:text-[#D6FF3F] hover:bg-[#141513]/40 border border-transparent focus-visible:outline-2 focus-visible:outline-[#4B78FF] rounded-[2px] w-full"
+                className="flex items-center justify-between px-3 py-2 text-xs font-mono font-bold text-[#A8AAA3] hover:text-[#D6FF3F] hover:bg-[#141513]/40 border border-transparent focus-visible:outline-2 focus-visible:outline-[#4B78FF] rounded-[2px] w-full cursor-pointer"
                 style={{ fontFamily: 'var(--font-technical)' }}
               >
                 <span className="flex items-center gap-2">
@@ -282,7 +282,7 @@ function AppShellContent({ children }: AppShellProps) {
             <Link
               to="/app/settings"
               aria-current="page"
-              className="flex items-center justify-between px-3 py-2 text-xs font-mono font-bold text-[#D6FF3F] bg-[#141513] border border-[#242522] focus-visible:outline-2 focus-visible:outline-[#4B78FF] rounded-[2px] w-full"
+              className="flex items-center justify-between px-3 py-2 text-xs font-mono font-bold text-[#D6FF3F] bg-[#141513] border border-[#242522] focus-visible:outline-2 focus-visible:outline-[#4B78FF] rounded-[2px] w-full cursor-pointer"
               style={{ fontFamily: 'var(--font-technical)' }}
             >
               <span className="flex items-center gap-2">
@@ -294,7 +294,7 @@ function AppShellContent({ children }: AppShellProps) {
           ) : (
             <Link
               to="/app/settings"
-              className="flex items-center justify-between px-3 py-2 text-xs font-mono font-bold text-[#A8AAA3] hover:text-[#D6FF3F] hover:bg-[#141513]/40 border border-transparent focus-visible:outline-2 focus-visible:outline-[#4B78FF] rounded-[2px] w-full"
+              className="flex items-center justify-between px-3 py-2 text-xs font-mono font-bold text-[#A8AAA3] hover:text-[#D6FF3F] hover:bg-[#141513]/40 border border-transparent focus-visible:outline-2 focus-visible:outline-[#4B78FF] rounded-[2px] w-full cursor-pointer"
               style={{ fontFamily: 'var(--font-technical)' }}
             >
               <span className="flex items-center gap-2">
@@ -309,7 +309,7 @@ function AppShellContent({ children }: AppShellProps) {
             <Link
               to="/app/incidents/new"
               aria-current="page"
-              className="w-full flex items-center justify-between px-3 py-2.5 text-xs font-mono font-bold tracking-wider text-[#D6FF3F] bg-[#141513] border border-[#242522] rounded-[2px]"
+              className="w-full flex items-center justify-between px-3 py-2.5 text-xs font-mono font-bold tracking-wider text-[#D6FF3F] bg-[#141513] border border-[#242522] rounded-[2px] cursor-pointer focus-visible:outline-2 focus-visible:outline-[#4B78FF]"
               style={{ fontFamily: 'var(--font-technical)' }}
             >
               <span className="flex items-center gap-2">
@@ -321,7 +321,7 @@ function AppShellContent({ children }: AppShellProps) {
           ) : (
             <Link
               to="/app/incidents/new"
-              className="w-full flex items-center justify-center gap-2 px-3 py-2.5 text-xs font-mono font-bold tracking-wider text-[#A8AAA3] hover:text-[#D6FF3F] hover:bg-[#141513]/40 border border-[#242522] bg-[#141513]/10 rounded-[2px] transition-colors"
+              className="w-full flex items-center justify-center gap-2 px-3 py-2.5 text-xs font-mono font-bold tracking-wider text-[#A8AAA3] hover:text-[#D6FF3F] hover:bg-[#141513]/40 border border-[#242522] bg-[#141513]/10 rounded-[2px] transition-colors cursor-pointer focus-visible:outline-2 focus-visible:outline-[#4B78FF]"
               style={{ fontFamily: 'var(--font-technical)' }}
             >
               + NEW INCIDENT
@@ -388,7 +388,7 @@ function AppShellContent({ children }: AppShellProps) {
                     to="/app"
                     aria-current="page"
                     onClick={() => setIsDrawerOpen(false)}
-                    className="flex items-center justify-between px-3 py-2 text-xs font-mono font-bold text-[#D6FF3F] bg-[#141513] border border-[#242522] focus-visible:outline-2 focus-visible:outline-[#4B78FF] rounded-[2px] w-full"
+                    className="flex items-center justify-between px-3 py-2 text-xs font-mono font-bold text-[#D6FF3F] bg-[#141513] border border-[#242522] focus-visible:outline-2 focus-visible:outline-[#4B78FF] rounded-[2px] w-full cursor-pointer"
                     style={{ fontFamily: 'var(--font-technical)' }}
                   >
                     <span className="flex items-center gap-2">
@@ -401,7 +401,7 @@ function AppShellContent({ children }: AppShellProps) {
                   <Link
                     to="/app"
                     onClick={() => setIsDrawerOpen(false)}
-                    className="flex items-center justify-between px-3 py-2 text-xs font-mono font-bold text-[#A8AAA3] hover:text-[#D6FF3F] hover:bg-[#141513]/40 border border-transparent focus-visible:outline-2 focus-visible:outline-[#4B78FF] rounded-[2px] w-full"
+                    className="flex items-center justify-between px-3 py-2 text-xs font-mono font-bold text-[#A8AAA3] hover:text-[#D6FF3F] hover:bg-[#141513]/40 border border-transparent focus-visible:outline-2 focus-visible:outline-[#4B78FF] rounded-[2px] w-full cursor-pointer"
                     style={{ fontFamily: 'var(--font-technical)' }}
                   >
                     <span className="flex items-center gap-2">
@@ -415,7 +415,7 @@ function AppShellContent({ children }: AppShellProps) {
                     to="/app/incidents"
                     aria-current="page"
                     onClick={() => setIsDrawerOpen(false)}
-                    className="flex items-center justify-between px-3 py-2 text-xs font-mono font-bold text-[#D6FF3F] bg-[#141513] border border-[#242522] focus-visible:outline-2 focus-visible:outline-[#4B78FF] rounded-[2px] w-full"
+                    className="flex items-center justify-between px-3 py-2 text-xs font-mono font-bold text-[#D6FF3F] bg-[#141513] border border-[#242522] focus-visible:outline-2 focus-visible:outline-[#4B78FF] rounded-[2px] w-full cursor-pointer"
                     style={{ fontFamily: 'var(--font-technical)' }}
                   >
                     <span className="flex items-center gap-2">
@@ -428,7 +428,7 @@ function AppShellContent({ children }: AppShellProps) {
                   <Link
                     to="/app/incidents"
                     onClick={() => setIsDrawerOpen(false)}
-                    className="flex items-center justify-between px-3 py-2 text-xs font-mono font-bold text-[#A8AAA3] hover:text-[#D6FF3F] hover:bg-[#141513]/40 border border-transparent focus-visible:outline-2 focus-visible:outline-[#4B78FF] rounded-[2px] w-full"
+                    className="flex items-center justify-between px-3 py-2 text-xs font-mono font-bold text-[#A8AAA3] hover:text-[#D6FF3F] hover:bg-[#141513]/40 border border-transparent focus-visible:outline-2 focus-visible:outline-[#4B78FF] rounded-[2px] w-full cursor-pointer"
                     style={{ fontFamily: 'var(--font-technical)' }}
                   >
                     <span className="flex items-center gap-2">
@@ -442,7 +442,7 @@ function AppShellContent({ children }: AppShellProps) {
                     to="/app/services"
                     aria-current="page"
                     onClick={() => setIsDrawerOpen(false)}
-                    className="flex items-center justify-between px-3 py-2 text-xs font-mono font-bold text-[#D6FF3F] bg-[#141513] border border-[#242522] focus-visible:outline-2 focus-visible:outline-[#4B78FF] rounded-[2px] w-full"
+                    className="flex items-center justify-between px-3 py-2 text-xs font-mono font-bold text-[#D6FF3F] bg-[#141513] border border-[#242522] focus-visible:outline-2 focus-visible:outline-[#4B78FF] rounded-[2px] w-full cursor-pointer"
                     style={{ fontFamily: 'var(--font-technical)' }}
                   >
                     <span className="flex items-center gap-2">
@@ -455,7 +455,7 @@ function AppShellContent({ children }: AppShellProps) {
                   <Link
                     to="/app/services"
                     onClick={() => setIsDrawerOpen(false)}
-                    className="flex items-center justify-between px-3 py-2 text-xs font-mono font-bold text-[#A8AAA3] hover:text-[#D6FF3F] hover:bg-[#141513]/40 border border-transparent focus-visible:outline-2 focus-visible:outline-[#4B78FF] rounded-[2px] w-full"
+                    className="flex items-center justify-between px-3 py-2 text-xs font-mono font-bold text-[#A8AAA3] hover:text-[#D6FF3F] hover:bg-[#141513]/40 border border-transparent focus-visible:outline-2 focus-visible:outline-[#4B78FF] rounded-[2px] w-full cursor-pointer"
                     style={{ fontFamily: 'var(--font-technical)' }}
                   >
                     <span className="flex items-center gap-2">
@@ -470,7 +470,7 @@ function AppShellContent({ children }: AppShellProps) {
                     to="/app/team"
                     aria-current="page"
                     onClick={() => setIsDrawerOpen(false)}
-                    className="flex items-center justify-between px-3 py-2 text-xs font-mono font-bold text-[#D6FF3F] bg-[#141513] border border-[#242522] focus-visible:outline-2 focus-visible:outline-[#4B78FF] rounded-[2px] w-full"
+                    className="flex items-center justify-between px-3 py-2 text-xs font-mono font-bold text-[#D6FF3F] bg-[#141513] border border-[#242522] focus-visible:outline-2 focus-visible:outline-[#4B78FF] rounded-[2px] w-full cursor-pointer"
                     style={{ fontFamily: 'var(--font-technical)' }}
                   >
                     <span className="flex items-center gap-2">
@@ -483,7 +483,7 @@ function AppShellContent({ children }: AppShellProps) {
                   <Link
                     to="/app/team"
                     onClick={() => setIsDrawerOpen(false)}
-                    className="flex items-center justify-between px-3 py-2 text-xs font-mono font-bold text-[#A8AAA3] hover:text-[#D6FF3F] hover:bg-[#141513]/40 border border-transparent focus-visible:outline-2 focus-visible:outline-[#4B78FF] rounded-[2px] w-full"
+                    className="flex items-center justify-between px-3 py-2 text-xs font-mono font-bold text-[#A8AAA3] hover:text-[#D6FF3F] hover:bg-[#141513]/40 border border-transparent focus-visible:outline-2 focus-visible:outline-[#4B78FF] rounded-[2px] w-full cursor-pointer"
                     style={{ fontFamily: 'var(--font-technical)' }}
                   >
                     <span className="flex items-center gap-2">
@@ -498,7 +498,7 @@ function AppShellContent({ children }: AppShellProps) {
                     to="/app/settings"
                     aria-current="page"
                     onClick={() => setIsDrawerOpen(false)}
-                    className="flex items-center justify-between px-3 py-2 text-xs font-mono font-bold text-[#D6FF3F] bg-[#141513] border border-[#242522] focus-visible:outline-2 focus-visible:outline-[#4B78FF] rounded-[2px] w-full"
+                    className="flex items-center justify-between px-3 py-2 text-xs font-mono font-bold text-[#D6FF3F] bg-[#141513] border border-[#242522] focus-visible:outline-2 focus-visible:outline-[#4B78FF] rounded-[2px] w-full cursor-pointer"
                     style={{ fontFamily: 'var(--font-technical)' }}
                   >
                     <span className="flex items-center gap-2">
@@ -511,7 +511,7 @@ function AppShellContent({ children }: AppShellProps) {
                   <Link
                     to="/app/settings"
                     onClick={() => setIsDrawerOpen(false)}
-                    className="flex items-center justify-between px-3 py-2 text-xs font-mono font-bold text-[#A8AAA3] hover:text-[#D6FF3F] hover:bg-[#141513]/40 border border-transparent focus-visible:outline-2 focus-visible:outline-[#4B78FF] rounded-[2px] w-full"
+                    className="flex items-center justify-between px-3 py-2 text-xs font-mono font-bold text-[#A8AAA3] hover:text-[#D6FF3F] hover:bg-[#141513]/40 border border-transparent focus-visible:outline-2 focus-visible:outline-[#4B78FF] rounded-[2px] w-full cursor-pointer"
                     style={{ fontFamily: 'var(--font-technical)' }}
                   >
                     <span className="flex items-center gap-2">
@@ -647,7 +647,13 @@ function AppShellContent({ children }: AppShellProps) {
               <span className="w-1.5 h-1.5 rounded-full bg-amber-500/80" title="Preview connection" />
             </div>
             {!isMockMode && (
-              <button type="button" onClick={() => void handleLogout()} disabled={isLoggingOut} className="px-2.5 py-1 text-[9px] font-mono font-bold tracking-wider text-[#A8AAA3] hover:text-[#D6FF3F] border border-[#242522] rounded-[2px] disabled:opacity-50" style={{ fontFamily: 'var(--font-technical)' }}>
+              <button
+                type="button"
+                onClick={() => void handleLogout()}
+                disabled={isLoggingOut}
+                className="inline-flex items-center justify-center min-h-[36px] px-2.5 py-1 text-[9px] font-mono font-bold tracking-wider text-[#A8AAA3] hover:text-[#D6FF3F] hover:bg-[#141513] border border-[#242522] bg-[#141513]/20 rounded-[2px] cursor-pointer transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#D6FF3F] disabled:opacity-50 disabled:cursor-not-allowed disabled:pointer-events-none"
+                style={{ fontFamily: 'var(--font-technical)' }}
+              >
                 {isLoggingOut ? 'SIGNING OUT...' : 'SIGN OUT'}
               </button>
             )}
@@ -672,7 +678,7 @@ function AppShellContent({ children }: AppShellProps) {
         <Link
           to="/app"
           aria-current={isDashboardActive ? "page" : undefined}
-          className={`flex flex-col items-center justify-center h-full focus-visible:outline-2 focus-visible:outline-[#4B78FF] rounded-[1px] ${
+          className={`flex flex-col items-center justify-center h-full cursor-pointer focus-visible:outline-2 focus-visible:outline-[#4B78FF] rounded-[1px] ${
             isDashboardActive ? 'text-[#D6FF3F]' : 'text-[#A8AAA3] hover:text-[#D6FF3F]'
           } hover:bg-[#141513]/50`}
         >
@@ -685,7 +691,7 @@ function AppShellContent({ children }: AppShellProps) {
         <Link
           to="/app/incidents"
           aria-current={isIncidentsActive ? "page" : undefined}
-          className={`flex flex-col items-center justify-center h-full focus-visible:outline-2 focus-visible:outline-[#4B78FF] rounded-[1px] ${
+          className={`flex flex-col items-center justify-center h-full cursor-pointer focus-visible:outline-2 focus-visible:outline-[#4B78FF] rounded-[1px] ${
             isIncidentsActive ? 'text-[#D6FF3F]' : 'text-[#A8AAA3] hover:text-[#D6FF3F]'
           } hover:bg-[#141513]/50`}
         >
@@ -698,7 +704,7 @@ function AppShellContent({ children }: AppShellProps) {
         <Link
           to="/app/incidents/new"
           aria-current={isIncidentsNewActive ? "page" : undefined}
-          className={`flex flex-col items-center justify-center h-full focus-visible:outline-2 focus-visible:outline-[#4B78FF] rounded-[1px] ${
+          className={`flex flex-col items-center justify-center h-full cursor-pointer focus-visible:outline-2 focus-visible:outline-[#4B78FF] rounded-[1px] ${
             isIncidentsNewActive ? 'text-[#D6FF3F]' : 'text-[#A8AAA3] hover:text-[#D6FF3F]'
           } hover:bg-[#141513]/50`}
         >

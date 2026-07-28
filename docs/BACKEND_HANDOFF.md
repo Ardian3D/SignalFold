@@ -101,7 +101,7 @@ Phase 02D remains blocked until external live-auth and browser visual verificati
 ---
 
 ## 01 / Frontend Freeze Status
-The frontend codebase is **fully frozen**. All visual layouts, design typography, color tokens, and interactive flows are verified, tested, and complete. 
+The frontend codebase is **fully frozen**. All visual layouts, design typography, color tokens, and interactive flows are verified, tested, and complete.
 - **Automated Coverage:** 27 test files, 232 test cases (all passing).
 - **Type Safety:** 100% compliant TypeScript with zero unresolved compiler or linter errors.
 - **Production Build:** Successfully bundled and compiled for static serving.
@@ -327,3 +327,351 @@ Phase 04 is implemented and hosted-runtime verified on
   notifications, public status, and postmortems remain out of scope.
 - **Deployment status:** Backend resources were deployed with targeted
   function deployment only. No full Base44 deployment occurred.
+
+## 12 / Major Phase 05 — Test Runner Baseline Note
+
+Phase 05 retains full canonical test coverage and serializes Vitest execution
+with the accepted command:
+
+```
+npx vitest run --maxWorkers=1
+```
+
+Package scripts:
+
+- `npm test` → `vitest --maxWorkers=1` (watch-capable serial runner)
+- `npm run test:run` → `vitest run` (single-pass; prefer explicit
+  `--maxWorkers=1` for accepted full-suite verification)
+
+The original merged-main script was plain `vitest`. During the Phase 05
+prerequisite audit, the default multi-worker pool and a two-worker run produced
+worker-startup timeouts and legacy heavy UI timeouts, while the same files
+passed individually and the full suite passed with one worker. This is a local
+test-runner resource constraint, not a production runtime difference and not a
+claim that application code is unsafe under concurrency.
+
+## 13 / Major Phase 05 — Tasks, Timeline, and Coordination (COMPLETE)
+
+**Status:** COMPLETE — hosted visual freeze, interactive-affordance gate, and
+all applicable hosted runtime checks accepted by the product owner.
+
+**Branch:** `backend/base44-phase-05-tasks-timeline`
+**Phase 04 merge base:** `c60f1a3` (Merge pull request #4 —
+`backend/base44-phase-04-incidents-dashboard`)
+
+### Entity manifest
+
+Approved local entity set (exactly seven resources):
+
+1. `User`
+2. `Organization`
+3. `Membership`
+4. `Service`
+5. `Incident`
+6. `IncidentUpdate`
+7. `IncidentTask` (Phase 05 addition)
+
+Not present and not introduced:
+
+- `Postmortem`
+- `AiRun`
+- `Notification`
+- `AuditLog`
+- realtime subscription resources
+- DeepSeek provider resources
+
+### IncidentTask schema
+
+Path: `base44/entities/incident-task.jsonc`
+
+- Tenant scope: required `organization_id`, `incident_id`
+- Content: `title`, optional `description`
+- Canonical `priority`: `critical` | `high` | `medium` | `low`
+- Canonical `status`: `todo` | `in_progress` | `blocked` | `done` | `cancelled`
+- Optional assignee: `assignee_user_id` (validated server-side to active same-org
+  Membership)
+- Server-owned: `source`, `order_index`, `claimed_at`, `completed_at`,
+  `created_by_user_id`, timestamps
+- Optional: `due_at`, `blocking_reason`, `completion_note`, `ai_run_id`,
+  `is_demo`, idempotency `request_id`
+- Direct client RLS: create/read/update/delete all denied (`rls` false)
+
+### IncidentUpdate compatibility mapping
+
+- Physical deployed field remains `event_type` (not renamed)
+- Domain projections expose canonical timeline `type` / `eventType`
+- Phase 05 extends the `event_type` enum for coordination events while
+  preserving existing incident lifecycle values
+- Coordination event types include: `task_created`, `task_claimed`,
+  `task_unclaimed`, `task_assigned`, `task_reassigned`, `task_blocked`,
+  `task_unblocked` / resume representation, `task_completed`,
+  `task_cancelled`, `internal_note_added`
+- Timeline UI shows safe actor, timestamp, visibility, and message only —
+  no raw metadata JSON and no raw internal record IDs
+
+### Task transition and action contract
+
+Domain: `src/features/tasks/domain/taskTypes.ts`
+Visibility helper: `getTaskActionVisibility(task, role, currentUserId)`
+
+| Status | Typical actions (when role-authorized) |
+|---|---|
+| `todo` unassigned | CLAIM; managers may assign / block |
+| `todo` assigned | managers may reassign / block; no COMPLETE |
+| `in_progress` | UNCLAIM (owner/manager), MARK BLOCKED, COMPLETE |
+| `blocked` | RESUME (owner/manager); no COMPLETE |
+| `done` / `cancelled` | terminal — no mutation actions |
+
+Additional rules:
+
+- COMPLETE only on `in_progress` for authorized owner or manager
+- Critical confirmation required only when priority is `critical` and COMPLETE
+  is otherwise allowed
+- HIGH / MEDIUM / LOW never show critical confirmation
+- Reporter task presentation remains read-only for task mutations
+- Backend remains authoritative; UI waits for server confirmation
+
+### Role and capability contract
+
+SignalFold authority remains on **Membership.role**, never Base44 `User.role`.
+
+| Capability (representative) | Roles |
+|---|---|
+| Create task | responder, incident_manager, admin |
+| Claim / unclaim own / progress own | responder, incident_manager, admin |
+| Assign / reassign / cancel / broader metadata | incident_manager, admin |
+| Add internal note | reporter, responder, incident_manager, admin |
+| Manage services / org settings | prior Phase 03–04 capabilities unchanged |
+
+Assignee validation requires an **active same-organization Membership**.
+Inactive and cross-organization users are rejected (`ASSIGNEE_NOT_ACTIVE`).
+
+### Task function inventory
+
+| Function | Purpose |
+|---|---|
+| `list-incident-tasks` | Tenant-scoped task list + summary |
+| `create-incident-task` | Create task; append `task_created` |
+| `claim-task` | Conditional claim to `in_progress` |
+| `unclaim-task` | Return to unassigned `todo` |
+| `assign-incident-task` | Manager assign/reassign |
+| `update-incident-task` | Block / resume / complete / cancel path |
+
+Shared helpers: `base44/functions/_shared/task-workflow.ts`,
+`base44/functions/_shared/coordination.ts`.
+
+### Timeline and Internal Note function inventory
+
+| Function | Purpose |
+|---|---|
+| `list-incident-timeline` | Ordered internal timeline read (zero-write) |
+| `add-incident-note` | Append `internal_note_added` (INTERNAL visibility) |
+
+Existing read/mutation companions updated for tasks:
+
+- `get-incident` — includes tasks, timeline, assignment options, capabilities
+- `get-dashboard-overview` — open tasks, team load, needs attention, activity
+- `seed-demo-data` — reconciles canonical system demo tasks + bounded events
+- `reset-demo-data` — demo-only isolation including IncidentTask
+- `create-incident` — preserved; no task fake data leakage into live mode
+
+### Claim concurrency mechanism
+
+`claim-task` uses Base44 service-role **conditional `updateMany`** matching:
+
+- task `id`
+- `organization_id`
+- `incident_id`
+- `status = todo`
+- empty / unassigned `assignee_user_id`
+
+Exactly one concurrent winner updates the row to `in_progress` with
+server-owned `claimed_at` and assignee. Losers receive
+`TASK_ALREADY_CLAIMED` and append **no** timeline event.
+
+### Idempotency behavior
+
+- Client `requestId` is normalized and stored where applicable
+- Mutation helpers reuse an existing `IncidentUpdate` for the same
+  organization/incident/`request_id`/`event_type` instead of double-appending
+- Legitimate separate claim cycles (claim → unclaim → claim) produce distinct
+  `task_claimed` events and are not incorrectly collapsed
+- Create-task and note paths follow the same request-id safety pattern
+
+### Read-path zero-write guarantee
+
+The following perform **zero writes** on read:
+
+- `list-incident-tasks`
+- `list-incident-timeline`
+- `get-incident` (read projection only)
+- `get-dashboard-overview`
+
+Reads may normalize/project in memory and deduplicate true logical duplicates
+for display. They do **not** repair persistence, reconcile missing events into
+storage, or create timeline/task records.
+
+Hosted product-owner verification confirmed five-refresh zero-write behavior
+for Incident Room Timeline, Internal Notes, and Dashboard.
+
+### Query keys and invalidation
+
+Frontend query key modules:
+
+- `src/features/tasks/queryKeys.ts`
+- `src/features/timeline/queryKeys.ts`
+- existing `src/features/operations/queryKeys.ts`
+
+Successful mutations invalidate operational / task / timeline query scopes so
+Dashboard, Incident Room, and Team load refresh from authoritative reads.
+No optimistic fake completion is applied for claim, unclaim, block, resume,
+or complete.
+
+### Incident Room Tasks integration
+
+Live Base44 surface: `LiveIncidentRoom` in
+`src/features/operations/OperationalViews.tsx`
+
+- Tasks panel behind TIMELINE / TASKS / DETAILS tab shell
+- CREATE TASK collapsed opener; form submit is primary action
+- REFRESH is compact neutral outlined control
+- CLAIM / UNCLAIM / MARK BLOCKED / RESUME / COMPLETE use shared operational
+  action affordances
+- Assignment uses native select form control (not button chrome)
+- Role-based action visibility via `getTaskActionVisibility`
+- Mock mode continues to render the frozen frontend Incident Room preview
+
+### Incident Room Timeline integration
+
+- Default order: Latest First (`desc`)
+- Oldest First supported via native select
+- ADD INTERNAL NOTE collapsed opener; submit primary
+- Events display safe message, type label, timestamp, visibility/actor type
+- Distinct task lifecycle events remain separate after repeated reads
+
+### Dashboard Task metrics
+
+- OPEN TASKS = authoritative count of TODO + IN_PROGRESS + BLOCKED
+- DONE and CANCELLED excluded from open load
+- Needs Attention uses deterministic blocked / overdue / unassigned-critical /
+  active severe-incident rules
+- Team Load aggregates open workload per active member
+- Recent Activity includes bounded task and note events without duplicates
+- Dashboard reads invoke no mutation functions
+
+### Team Task load
+
+Live Team boundary (`OrganizationReadBoundaries`) shows organization-scoped
+open / in-progress / blocked load for active members only. No Team mutation
+controls. No cross-tenant members or tasks.
+
+### Demo Task seed / reseed / reset
+
+- Existing demo workspace is reused (no new fake users)
+- Canonical Phase 05 demo tasks seed with `source = system` (not AI)
+- Re-seed reconciles without duplicating tasks or timeline events
+- Reset requires exact confirmation phrase
+- Reset affects only demo Service / Incident / IncidentUpdate / IncidentTask
+  data for the authorized demo organization
+- User, Organization, Membership, and real workspace tasks remain untouched
+- Repeated reset remains safe
+
+### Visual-freeze restoration
+
+Product-owner hosted visual retest accepted:
+
+- Phase 04 visual identity preserved
+- Incident Room TIMELINE / TASKS / DETAILS with single visible panel
+- Details remains dedicated read-only surface
+- Create Task and Internal Note remain collapsed behind openers
+- Dashboard, Team, AppShell, Landing, Auth, Onboarding, Services, Incident
+  List, New Incident, Settings, brand, typography, spacing preserved
+
+### Application-wide affordance correction
+
+Shared operational affordance tokens:
+`src/components/ui/operationalActions.ts`
+
+- Primary solid lime, secondary outlined lime, neutral outlined, warning
+  outline, form controls, tab active/inactive, interactive nav rows
+- CREATE TASK, REFRESH, CLAIM, UNCLAIM, MARK BLOCKED, COMPLETE, ADD INTERNAL
+  NOTE, tabs, selects, Sign Out, Services ADD SERVICE corrected
+- Static metrics, READ ONLY labels, and metadata remain non-interactive
+- Design-system `Button` / `IconButton` include honest cursor treatment
+
+### Hosted runtime results (product owner)
+
+All applicable hosted runtime checks PASSED, including:
+
+- Task create / claim / unclaim / reclaim cycles with exact event counts
+- Block without reason rejected; block with reason accepted once
+- Resume once; normal HIGH completion once; critical confirmation gate
+- One internal note; timeline ordering; dashboard and team load
+- Demo seed / reseed idempotency / reset isolation
+- Responsive Incident Room at 430px / 390px / 360px
+- Out-of-scope network audit: no DeepSeek, realtime, AiRun, postmortem
+  backend, or incident status/severity/commander/resolution mutations
+
+### Hosted second-user assignment and claim concurrency
+
+| Check | Hosted result |
+|---|---|
+| Multi-member assignment / reassignment | **NOT AVAILABLE** (no second real active same-organization member was used for hosted verification; no fabricated users) |
+| Two-user concurrent claim | **NOT AVAILABLE** (same constraint) |
+
+Automated coverage remains the verified implementation evidence for concurrent
+claim conflict handling (`TASK_ALREADY_CLAIMED`, single winner, zero loser
+events) and for authorization / active-membership / tenant-isolation paths.
+
+### Automated concurrency verification
+
+Automated claim concurrency and task-contract tests PASS under the serial
+Vitest configuration (see Phase 05 test inventory). Implementation evidence is
+retained even when hosted two-user exercise is NOT AVAILABLE.
+
+### Tenant isolation and direct write denial
+
+- Frontend never mutates `IncidentTask` or `IncidentUpdate` entities directly
+- All task/timeline writes go through deployed functions
+- `organization_id` and `incident_id` are server-validated against membership
+- Client cannot set source, actor, status transitions, order index, or server
+  timestamps
+- Claim is server-authoritative
+- Critical completion confirmation is enforced server-side
+- Demo reset isolates demo data only
+
+### Deployment posture for Phase 05
+
+- Targeted entity/function deployment for Phase 05 coordination resources was
+  performed as part of the Phase 05 workstream (not a full Base44 deploy)
+- Frontend site-only deploys used for visual/affordance gates
+- No full Base44 deployment
+- No auth configuration push during Phase 05 finalization
+- No Phase 06 backend added
+
+### Deferred Phase 06 work
+
+Explicitly deferred:
+
+- Incident status / severity transitions
+- Commander assignment
+- Resolution, reopening, and closing workflows
+- Public status updates
+- Realtime subscriptions
+- DeepSeek / AiRun
+- Notifications and AuditLog
+- Postmortem backend
+- Team membership mutation admin workflows
+
+### Known non-blocking advisories
+
+- Existing React Router future-flag / advisory messages (if present in dev)
+  remain environmental and do not block Phase 05
+- Vite production build may emit the existing large-chunk size warning for the
+  main bundle; accepted non-blocking advisory, not a Phase 05 functional defect
+
+### Major Phase 05 completion statement
+
+Major Phase 05 (Tasks, Timeline, and Coordination) is complete and accepted.
+The branch is ready for Backend Phase 06: Incident Authority, State Transitions
+& Resolution.

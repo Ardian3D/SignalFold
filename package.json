@@ -11,7 +11,7 @@
     "clean": "rm -rf dist server.js",
     "lint": "tsc --noEmit",
     "typecheck": "tsc --noEmit",
-    "test": "vitest",
+    "test": "vitest --maxWorkers=1",
     "test:run": "vitest run"
   },
   "dependencies": {

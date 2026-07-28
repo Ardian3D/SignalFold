@@ -107,12 +107,12 @@ export function VerifyEmailPage() {
             </div>
 
             <div className="w-full flex flex-col sm:flex-row gap-3">
-              <button type="button" onClick={() => void verify()} disabled={pending || !safeEmail || !otp || isMockMode} className="w-full min-h-[44px] px-4 py-3 text-xs font-mono font-bold tracking-widest bg-[#F3F1EA] text-[#0A0A0A] rounded-[2px] disabled:opacity-50">VERIFY</button>
-              <button type="button" onClick={() => void resend()} disabled={pending || !safeEmail || isMockMode} className="w-full min-h-[44px] px-4 py-3 text-xs font-mono font-bold tracking-widest border border-[#242522] text-[#A8AAA3] rounded-[2px] disabled:opacity-50">RESEND</button>
+              <button type="button" onClick={() => void verify()} disabled={pending || !safeEmail || !otp || isMockMode} className="w-full min-h-[44px] px-4 py-3 text-xs font-mono font-bold tracking-widest bg-[#F3F1EA] text-[#0A0A0A] hover:bg-[#D6FF3F] rounded-[2px] cursor-pointer transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#4B78FF] disabled:opacity-50 disabled:cursor-not-allowed">VERIFY</button>
+              <button type="button" onClick={() => void resend()} disabled={pending || !safeEmail || isMockMode} className="w-full min-h-[44px] px-4 py-3 text-xs font-mono font-bold tracking-widest border border-[#242522] bg-[#141513]/20 text-[#A8AAA3] hover:text-[#D6FF3F] hover:bg-[#141513] rounded-[2px] cursor-pointer transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#4B78FF] disabled:opacity-50 disabled:cursor-not-allowed">RESEND</button>
             </div>
 
             <div className="pt-4 border-t border-[#242522]">
-              <Link to="/signup" className="inline-flex whitespace-nowrap text-[10px] font-mono font-bold tracking-widest text-[#A8AAA3] hover:text-[#D6FF3F]">BACK TO SIGNUP</Link>
+              <Link to="/signup" className="inline-flex whitespace-nowrap text-[10px] font-mono font-bold tracking-widest text-[#A8AAA3] hover:text-[#D6FF3F] underline underline-offset-4 cursor-pointer focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#4B78FF]">BACK TO SIGNUP</Link>
             </div>
           </AuthFormCard>
         </section>

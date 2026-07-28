@@ -1,6 +1,21 @@
 export { Button } from './Button';
 export type { ButtonProps, ButtonVariant, ButtonSize } from './Button';
 
+export {
+  primaryActionButton,
+  secondaryActionButton,
+  limeActionButton,
+  neutralActionButton,
+  compactNeutralActionButton,
+  warningActionButton,
+  selectControl,
+  textInputControl,
+  tabButton,
+  tabButtonActive,
+  tabButtonInactive,
+  interactiveNavRow,
+} from './operationalActions';
+
 export { IconButton } from './IconButton';
 export type { IconButtonProps, IconButtonVariant, IconButtonSize } from './IconButton';
 
