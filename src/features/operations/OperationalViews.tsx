@@ -20,7 +20,16 @@ import { getOperationalGateway } from './operationalGateway';
 import { operationalQueryKeys } from './queryKeys';
 import { taskQueryKeys } from '@/features/tasks/queryKeys';
 import { timelineQueryKeys } from '@/features/timeline/queryKeys';
+import type { RootCauseKnown } from '@/features/incidents/domain/incidentAuthorityTypes';
 import type { IncidentSeverity, IncidentStatus } from '@/features/incidents/domain/incidentTypes';
+import {
+  canAssignIncidentCommander,
+  canChangeIncidentSeverity,
+  canChangeIncidentStatus,
+  canCloseIncident,
+  canResolveIncident,
+  getAllowedNonResolutionTransitions,
+} from '@/features/incidents/domain/incidentStateMachine';
 import { getTaskActionVisibility, type IncidentTask } from '@/features/tasks/domain/taskTypes';
 import type { SafeOrganizationMember } from '@/features/organization/domain/organizationTypes';
 
@@ -143,8 +152,25 @@ export function LiveIncidentRoom() {
   const [activeTab, setActiveTab] = useState<'TIMELINE' | 'TASKS' | 'DETAILS'>('TIMELINE');
   const [isTaskComposerOpen, setIsTaskComposerOpen] = useState(false);
   const [isNoteComposerOpen, setIsNoteComposerOpen] = useState(false);
+  const [authorityPanel, setAuthorityPanel] = useState<'status' | 'severity' | 'commander' | 'resolve' | null>(null);
+  const [authorityError, setAuthorityError] = useState('');
+  const [statusTarget, setStatusTarget] = useState('');
+  const [statusReason, setStatusReason] = useState('');
+  const [severityTarget, setSeverityTarget] = useState<IncidentSeverity | ''>('');
+  const [severityReason, setSeverityReason] = useState('');
+  const [commanderTarget, setCommanderTarget] = useState('');
+  const [resolveForm, setResolveForm] = useState({
+    summary: '',
+    rootCauseKnown: 'unknown' as RootCauseKnown,
+    recoveryVerified: false,
+    remainingRisk: '',
+    overrideOpenCriticalTasks: false,
+    overrideReason: '',
+    restoreServiceOperational: false,
+  });
   const taskRequest = useRef(id());
   const noteRequest = useRef(id());
+  const authorityRequest = useRef(id());
   const canCreateTask = canRole(role, 'CREATE_TASK');
   const canAssign = canRole(role, 'REASSIGN_TASK');
   const canClaim = canRole(role, 'CLAIM_TASK');
@@ -162,6 +188,38 @@ export function LiveIncidentRoom() {
   const assignTask = useMutation({ mutationFn: ({ taskId, assigneeUserId }: { taskId: string; assigneeUserId: string | null }) => gateway.assignIncidentTask({ organizationId: org.id, incidentId: incidentId!, taskId, assigneeUserId, requestId: id() }), onSuccess: invalidateIncident, onError: () => setTaskError('TASK ASSIGNMENT FAILED.') });
   const updateTask = useMutation({ mutationFn: ({ task, status }: { task: IncidentTask; status: IncidentTask['status'] }) => gateway.updateIncidentTask({ organizationId: org.id, incidentId: incidentId!, taskId: task.id, status, blockingReason: status === 'blocked' ? blockingReasons[task.id] : undefined, confirmCriticalCompletion: status === 'done' ? criticalConfirmations[task.id] === true : undefined, requestId: id() }), onSuccess: invalidateIncident, onError: () => setTaskError('TASK UPDATE FAILED. CHECK REQUIRED CONFIRMATION OR BLOCKING REASON.') });
   const addNote = useMutation({ mutationFn: () => gateway.addIncidentNote({ organizationId: org.id, incidentId: incidentId!, message: note.trim(), requestId: noteRequest.current }), onSuccess: async () => { setNote(''); noteRequest.current = id(); await invalidateIncident(); }, onError: () => setNoteError('NOTE COULD NOT BE ADDED.') });
+  const changeState = useMutation({
+    mutationFn: (target?: IncidentStatus) => gateway.changeIncidentState({ organizationId: org.id, incidentId: incidentId!, expectedStatus: incidentQuery.data!.incident.status, targetStatus: (target ?? statusTarget) as IncidentStatus, reason: statusReason.trim() || undefined, requestId: authorityRequest.current }),
+    onSuccess: async () => { setAuthorityPanel(null); setStatusReason(''); setAuthorityError(''); authorityRequest.current = id(); await invalidateIncident(); },
+    onError: async () => { setAuthorityError('STATUS COULD NOT BE CHANGED. AUTHORITATIVE STATE WAS REFRESHED.'); await invalidateIncident(); },
+  });
+  const changeSeverity = useMutation({
+    mutationFn: () => gateway.changeIncidentSeverity({ organizationId: org.id, incidentId: incidentId!, expectedSeverity: incidentQuery.data!.incident.severity, newSeverity: severityTarget as IncidentSeverity, reason: severityReason.trim(), requestId: authorityRequest.current }),
+    onSuccess: async () => { setAuthorityPanel(null); setSeverityReason(''); setAuthorityError(''); authorityRequest.current = id(); await invalidateIncident(); },
+    onError: async () => { setAuthorityError('SEVERITY COULD NOT BE CHANGED. AUTHORITATIVE STATE WAS REFRESHED.'); await invalidateIncident(); },
+  });
+  const assignCommander = useMutation({
+    mutationFn: () => gateway.assignIncidentCommander({ organizationId: org.id, incidentId: incidentId!, commanderUserId: commanderTarget || null, expectedCommanderUserId: incidentQuery.data!.incident.commanderUserId ?? null, requestId: authorityRequest.current }),
+    onSuccess: async () => { setAuthorityPanel(null); setAuthorityError(''); authorityRequest.current = id(); await invalidateIncident(); },
+    onError: async () => { setAuthorityError('COMMANDER COULD NOT BE UPDATED. AUTHORITATIVE STATE WAS REFRESHED.'); await invalidateIncident(); },
+  });
+  const resolveIncident = useMutation({
+    mutationFn: () => gateway.resolveIncident({
+      organizationId: org.id,
+      incidentId: incidentId!,
+      expectedStatus: incidentQuery.data!.incident.status as 'investigating' | 'identified' | 'monitoring',
+      resolutionSummary: resolveForm.summary.trim(),
+      rootCauseKnown: resolveForm.rootCauseKnown,
+      recoveryVerified: resolveForm.recoveryVerified,
+      remainingRisk: resolveForm.remainingRisk.trim(),
+      overrideOpenCriticalTasks: resolveForm.overrideOpenCriticalTasks,
+      overrideReason: resolveForm.overrideReason.trim() || undefined,
+      restoreServiceOperational: resolveForm.restoreServiceOperational,
+      requestId: authorityRequest.current,
+    }),
+    onSuccess: async () => { setAuthorityPanel(null); setAuthorityError(''); authorityRequest.current = id(); await invalidateIncident(); },
+    onError: async () => { setAuthorityError('RESOLUTION FAILED. REVIEW CRITICAL TASKS AND REQUIRED FIELDS.'); await invalidateIncident(); },
+  });
 
   if (incidentQuery.isPending) return <State>LOADING INCIDENT...</State>;
   if (incidentQuery.isError) return <State retry={() => void incidentQuery.refetch()}>INCIDENT NOT FOUND OR ACCESS IS UNAVAILABLE.</State>;
@@ -169,8 +227,19 @@ export function LiveIncidentRoom() {
   const taskResult = tasksQuery.data ?? { tasks: incidentQuery.data.tasks, summary: incidentQuery.data.taskSummary ?? emptySummary };
   const timeline = timelineQuery.data?.items ?? incidentQuery.data.timeline ?? incidentQuery.data.updates;
   const assignmentOptions = members.length ? members.filter(member => member.status === 'active') : incidentQuery.data.assignmentOptions;
+  const commanderOptions = (incidentQuery.data.commanderOptions?.length ? incidentQuery.data.commanderOptions : assignmentOptions.filter(member => member.role === 'incident_manager' || member.role === 'admin'));
   const openTaskCount = taskResult.summary.todo + taskResult.summary.inProgress + taskResult.summary.blocked;
+  const openCriticalTaskCount = incidentQuery.data.openCriticalTaskCount ?? taskResult.tasks.filter(task => task.priority === 'critical' && ['todo', 'in_progress', 'blocked'].includes(task.status)).length;
+  const allowedTransitions = incidentQuery.data.allowedTransitions ?? getAllowedNonResolutionTransitions(incident.status);
+  const authority = incidentQuery.data.authority ?? {
+    canChangeStatus: canChangeIncidentStatus(role, incident.status),
+    canChangeSeverity: canChangeIncidentSeverity(role, incident.status),
+    canAssignCommander: canAssignIncidentCommander(role, incident.status),
+    canResolve: canResolveIncident(role, incident.status),
+    canClose: canCloseIncident(role, incident.status),
+  };
   const tabs = ['TIMELINE', 'TASKS', 'DETAILS'] as const;
+  const authorityPending = changeState.isPending || changeSeverity.isPending || assignCommander.isPending || resolveIncident.isPending;
 
   return <div className="space-y-6">
     <Panel>
@@ -182,7 +251,53 @@ export function LiveIncidentRoom() {
         <span>{incident.status.toUpperCase()}</span>
         <span>{service?.name ?? 'NO SERVICE'}</span>
         <span>{openTaskCount} OPEN TASKS</span>
+        <span>COMMANDER {memberName(assignmentOptions, incident.commanderUserId)}</span>
       </div>
+      {(authority.canChangeStatus || authority.canChangeSeverity || authority.canAssignCommander || authority.canResolve || authority.canClose) && (
+        <div className="mt-5 flex flex-wrap gap-2">
+          {authority.canChangeStatus && <button type="button" className={limeActionButton} onClick={() => { setAuthorityError(''); setAuthorityPanel(value => value === 'status' ? null : 'status'); setStatusTarget(allowedTransitions[0] ?? ''); }}>CHANGE STATUS</button>}
+          {authority.canChangeSeverity && <button type="button" className={limeActionButton} onClick={() => { setAuthorityError(''); setAuthorityPanel(value => value === 'severity' ? null : 'severity'); setSeverityTarget(''); }}>CHANGE SEVERITY</button>}
+          {authority.canAssignCommander && <button type="button" className={limeActionButton} onClick={() => { setAuthorityError(''); setAuthorityPanel(value => value === 'commander' ? null : 'commander'); setCommanderTarget(incident.commanderUserId ?? ''); }}>ASSIGN COMMANDER</button>}
+          {authority.canResolve && <button type="button" className={primaryActionButton} onClick={() => { setAuthorityError(''); setAuthorityPanel(value => value === 'resolve' ? null : 'resolve'); }}>RESOLVE INCIDENT</button>}
+          {authority.canClose && <button type="button" className={neutralActionButton} disabled={authorityPending} onClick={() => { setAuthorityError(''); changeState.mutate('closed'); }}>CLOSE INCIDENT</button>}
+        </div>
+      )}
+      {authorityError && <p aria-live="polite" className="mt-3 text-xs text-amber-400">{authorityError}</p>}
+      {authorityPanel === 'status' && (
+        <form className="mt-4 space-y-3 border border-[#242522] bg-[#141513]/30 p-4" onSubmit={event => { event.preventDefault(); if (!statusTarget || changeState.isPending) return; changeState.mutate(statusTarget as IncidentStatus); }}>
+          <label className="block text-xs text-[#A8AAA3]">TARGET STATUS<select aria-label="Target status" value={statusTarget} onChange={event => setStatusTarget(event.target.value)} className={`mt-2 w-full ${selectControl}`}>{allowedTransitions.map(value => <option key={value} value={value}>{value}</option>)}</select></label>
+          <label className="block text-xs text-[#A8AAA3]">REASON (OPTIONAL)<input aria-label="Status reason" value={statusReason} onChange={event => setStatusReason(event.target.value)} className={`mt-2 w-full ${textInputControl}`} /></label>
+          <div className="flex flex-wrap gap-2"><button type="submit" disabled={changeState.isPending || !statusTarget} className={primaryActionButton}>{changeState.isPending ? 'UPDATING...' : 'SUBMIT STATUS'}</button><button type="button" className={neutralActionButton} onClick={() => setAuthorityPanel(null)}>CANCEL</button></div>
+        </form>
+      )}
+      {authorityPanel === 'severity' && (
+        <form className="mt-4 space-y-3 border border-[#242522] bg-[#141513]/30 p-4" onSubmit={event => { event.preventDefault(); if (!severityTarget || !severityReason.trim() || changeSeverity.isPending) return; changeSeverity.mutate(); }}>
+          <label className="block text-xs text-[#A8AAA3]">NEW SEVERITY<select aria-label="New severity" value={severityTarget} onChange={event => setSeverityTarget(event.target.value as IncidentSeverity | '')} className={`mt-2 w-full ${selectControl}`}><option value="">SELECT</option>{(['SEV1', 'SEV2', 'SEV3', 'SEV4'] as IncidentSeverity[]).filter(value => value !== incident.severity).map(value => <option key={value} value={value}>{value}</option>)}</select></label>
+          <label className="block text-xs text-[#A8AAA3]">REASON *<input aria-label="Severity reason" value={severityReason} onChange={event => setSeverityReason(event.target.value)} className={`mt-2 w-full ${textInputControl}`} required /></label>
+          <div className="flex flex-wrap gap-2"><button type="submit" disabled={changeSeverity.isPending || !severityTarget || !severityReason.trim()} className={primaryActionButton}>{changeSeverity.isPending ? 'UPDATING...' : 'SUBMIT SEVERITY'}</button><button type="button" className={neutralActionButton} onClick={() => setAuthorityPanel(null)}>CANCEL</button></div>
+        </form>
+      )}
+      {authorityPanel === 'commander' && (
+        <form className="mt-4 space-y-3 border border-[#242522] bg-[#141513]/30 p-4" onSubmit={event => { event.preventDefault(); if (assignCommander.isPending) return; assignCommander.mutate(); }}>
+          <label className="block text-xs text-[#A8AAA3]">COMMANDER<select aria-label="Commander" value={commanderTarget} onChange={event => setCommanderTarget(event.target.value)} className={`mt-2 w-full ${selectControl}`}><option value="">UNASSIGNED</option>{commanderOptions.map(member => <option key={member.membershipId} value={member.userId}>{member.displayName ?? member.email ?? member.userId}</option>)}</select></label>
+          <div className="flex flex-wrap gap-2"><button type="submit" disabled={assignCommander.isPending} className={primaryActionButton}>{assignCommander.isPending ? 'UPDATING...' : 'SUBMIT COMMANDER'}</button><button type="button" className={neutralActionButton} onClick={() => setAuthorityPanel(null)}>CANCEL</button></div>
+        </form>
+      )}
+      {authorityPanel === 'resolve' && (
+        <form className="mt-4 space-y-3 border border-[#242522] bg-[#141513]/30 p-4" onSubmit={event => { event.preventDefault(); if (resolveIncident.isPending) return; if (!resolveForm.summary.trim() || !resolveForm.remainingRisk.trim() || !resolveForm.recoveryVerified) { setAuthorityError('RESOLUTION REQUIRES SUMMARY, REMAINING RISK, AND RECOVERY VERIFICATION.'); return; } if (openCriticalTaskCount > 0 && (!resolveForm.overrideOpenCriticalTasks || resolveForm.overrideReason.trim().length < 3)) { setAuthorityError('OPEN CRITICAL TASKS REQUIRE EXPLICIT OVERRIDE AND REASON.'); return; } resolveIncident.mutate(); }}>
+          <label className="block text-xs text-[#A8AAA3]">RESOLUTION SUMMARY *<textarea aria-label="Resolution summary" value={resolveForm.summary} onChange={event => setResolveForm({ ...resolveForm, summary: event.target.value })} className={`mt-2 w-full min-h-24 ${textInputControl}`} /></label>
+          <label className="block text-xs text-[#A8AAA3]">ROOT CAUSE KNOWN *<select aria-label="Root cause known" value={resolveForm.rootCauseKnown} onChange={event => setResolveForm({ ...resolveForm, rootCauseKnown: event.target.value as RootCauseKnown })} className={`mt-2 w-full ${selectControl}`}><option value="yes">YES</option><option value="no">NO</option><option value="unknown">UNKNOWN</option></select></label>
+          <label className="flex items-center gap-2 text-xs text-[#A8AAA3]"><input type="checkbox" checked={resolveForm.recoveryVerified} onChange={event => setResolveForm({ ...resolveForm, recoveryVerified: event.target.checked })} />SERVICE RECOVERY VERIFIED *</label>
+          <label className="block text-xs text-[#A8AAA3]">REMAINING RISK *<textarea aria-label="Remaining risk" value={resolveForm.remainingRisk} onChange={event => setResolveForm({ ...resolveForm, remainingRisk: event.target.value })} className={`mt-2 w-full min-h-20 ${textInputControl}`} placeholder="None known" /></label>
+          {service && service.operationalStatus !== 'operational' && <label className="flex items-center gap-2 text-xs text-[#A8AAA3]"><input type="checkbox" checked={resolveForm.restoreServiceOperational} onChange={event => setResolveForm({ ...resolveForm, restoreServiceOperational: event.target.checked })} />MARK AFFECTED SERVICE OPERATIONAL</label>}
+          <p className="text-xs font-mono text-amber-400">OPEN CRITICAL TASKS · {openCriticalTaskCount}</p>
+          {openCriticalTaskCount > 0 && <>
+            <label className="flex items-center gap-2 text-xs text-amber-400"><input type="checkbox" checked={resolveForm.overrideOpenCriticalTasks} onChange={event => setResolveForm({ ...resolveForm, overrideOpenCriticalTasks: event.target.checked })} />OVERRIDE OPEN CRITICAL TASKS</label>
+            {resolveForm.overrideOpenCriticalTasks && <label className="block text-xs text-[#A8AAA3]">OVERRIDE REASON *<textarea aria-label="Override reason" value={resolveForm.overrideReason} onChange={event => setResolveForm({ ...resolveForm, overrideReason: event.target.value })} className={`mt-2 w-full min-h-20 ${textInputControl}`} /></label>}
+          </>}
+          <div className="flex flex-wrap gap-2"><button type="submit" disabled={resolveIncident.isPending} className={primaryActionButton}>{resolveIncident.isPending ? 'RESOLVING...' : 'CONFIRM RESOLUTION'}</button><button type="button" className={neutralActionButton} onClick={() => setAuthorityPanel(null)}>CANCEL</button></div>
+        </form>
+      )}
     </Panel>
     <div className="w-full min-w-0 border-b border-[#242522]" role="tablist" aria-label="Incident Room Sections">
       {tabs.map(tab => <button key={tab} type="button" id={`tab-${tab}`} role="tab" aria-selected={activeTab === tab} aria-controls={`panel-${tab}`} onClick={() => setActiveTab(tab)} className={`${tabButton} ${activeTab === tab ? tabButtonActive : tabButtonInactive}`}>{tab}</button>)}
@@ -236,7 +351,34 @@ export function LiveIncidentRoom() {
           </div>;
         })}</div>}
       </Panel>}
-      {activeTab === 'DETAILS' && <Panel><h3 className="font-bold text-[#F3F1EA] mb-4">INCIDENT DETAILS</h3><dl className="grid sm:grid-cols-2 gap-4 text-sm"><div><dt className="text-[10px] font-mono text-[#5C5E58]">CODE</dt><dd className="text-[#F3F1EA]">{incident.code}</dd></div><div><dt className="text-[10px] font-mono text-[#5C5E58]">STATUS</dt><dd className="text-[#F3F1EA]">{incident.status.toUpperCase()}</dd></div><div><dt className="text-[10px] font-mono text-[#5C5E58]">SEVERITY</dt><dd className="text-[#F3F1EA]">{incident.severity}</dd></div><div><dt className="text-[10px] font-mono text-[#5C5E58]">SERVICE</dt><dd className="text-[#F3F1EA]">{service?.name ?? 'NO SERVICE'}</dd></div><div><dt className="text-[10px] font-mono text-[#5C5E58]">REPORTED</dt><dd className="text-[#F3F1EA]">{new Date(incident.reportedAt).toLocaleString()}</dd></div><div><dt className="text-[10px] font-mono text-[#5C5E58]">PUBLIC VISIBILITY</dt><dd className="text-[#F3F1EA]">{incident.publicVisibility.toUpperCase()}</dd></div></dl><p className="mt-6 text-sm text-[#A8AAA3] whitespace-pre-wrap">{incident.description}</p></Panel>}
+      {activeTab === 'DETAILS' && <Panel>
+        <h3 className="font-bold text-[#F3F1EA] mb-4">INCIDENT DETAILS</h3>
+        <dl className="grid sm:grid-cols-2 gap-4 text-sm">
+          <div><dt className="text-[10px] font-mono text-[#5C5E58]">CODE</dt><dd className="text-[#F3F1EA]">{incident.code}</dd></div>
+          <div><dt className="text-[10px] font-mono text-[#5C5E58]">STATUS</dt><dd className="text-[#F3F1EA]">{incident.status.toUpperCase()}</dd></div>
+          <div><dt className="text-[10px] font-mono text-[#5C5E58]">SEVERITY</dt><dd className="text-[#F3F1EA]">{incident.severity}</dd></div>
+          <div><dt className="text-[10px] font-mono text-[#5C5E58]">SERVICE</dt><dd className="text-[#F3F1EA]">{service?.name ?? 'NO SERVICE'}</dd></div>
+          <div><dt className="text-[10px] font-mono text-[#5C5E58]">COMMANDER</dt><dd className="text-[#F3F1EA]">{memberName(assignmentOptions, incident.commanderUserId)}</dd></div>
+          <div><dt className="text-[10px] font-mono text-[#5C5E58]">REPORTED</dt><dd className="text-[#F3F1EA]">{new Date(incident.reportedAt).toLocaleString()}</dd></div>
+          {incident.acknowledgedAt && <div><dt className="text-[10px] font-mono text-[#5C5E58]">ACKNOWLEDGED</dt><dd className="text-[#F3F1EA]">{new Date(incident.acknowledgedAt).toLocaleString()}</dd></div>}
+          <div><dt className="text-[10px] font-mono text-[#5C5E58]">PUBLIC VISIBILITY</dt><dd className="text-[#F3F1EA]">{incident.publicVisibility.toUpperCase()}</dd></div>
+        </dl>
+        {(incident.status === 'resolved' || incident.status === 'closed') && (
+          <div className="mt-6 space-y-3 border-t border-[#242522] pt-4">
+            <h4 className="font-bold text-[#F3F1EA]">RESOLUTION</h4>
+            <dl className="grid sm:grid-cols-2 gap-4 text-sm">
+              <div className="sm:col-span-2"><dt className="text-[10px] font-mono text-[#5C5E58]">SUMMARY</dt><dd className="text-[#F3F1EA] whitespace-pre-wrap">{incident.resolutionSummary ?? 'NOT PROVIDED'}</dd></div>
+              <div><dt className="text-[10px] font-mono text-[#5C5E58]">ROOT CAUSE KNOWN</dt><dd className="text-[#F3F1EA]">{(incident.rootCauseKnown ?? 'unknown').toUpperCase()}</dd></div>
+              <div><dt className="text-[10px] font-mono text-[#5C5E58]">RECOVERY VERIFIED</dt><dd className="text-[#F3F1EA]">{incident.recoveryVerified ? 'YES' : 'NO'}</dd></div>
+              <div className="sm:col-span-2"><dt className="text-[10px] font-mono text-[#5C5E58]">REMAINING RISK</dt><dd className="text-[#F3F1EA] whitespace-pre-wrap">{incident.remainingRisk ?? 'NOT PROVIDED'}</dd></div>
+              {incident.resolvedAt && <div><dt className="text-[10px] font-mono text-[#5C5E58]">RESOLVED</dt><dd className="text-[#F3F1EA]">{new Date(incident.resolvedAt).toLocaleString()}</dd></div>}
+              {incident.closedAt && <div><dt className="text-[10px] font-mono text-[#5C5E58]">CLOSED</dt><dd className="text-[#F3F1EA]">{new Date(incident.closedAt).toLocaleString()}</dd></div>}
+              {incident.resolutionOverrideReason && <div className="sm:col-span-2"><dt className="text-[10px] font-mono text-[#5C5E58]">CRITICAL OVERRIDE REASON</dt><dd className="text-[#F3F1EA] whitespace-pre-wrap">{incident.resolutionOverrideReason}</dd></div>}
+            </dl>
+          </div>
+        )}
+        <p className="mt-6 text-sm text-[#A8AAA3] whitespace-pre-wrap">{incident.description}</p>
+      </Panel>}
     </main>
   </div>;
 }

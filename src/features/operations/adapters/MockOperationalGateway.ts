@@ -74,4 +74,20 @@ export class MockOperationalGateway implements OperationalGateway {
   async resetDemoData(..._args: Parameters<OperationalGateway['resetDemoData']>): ReturnType<OperationalGateway['resetDemoData']> {
     throw new Error('MOCK_OPERATION_NOT_SUPPORTED');
   }
+
+  async changeIncidentState(..._args: Parameters<OperationalGateway['changeIncidentState']>): ReturnType<OperationalGateway['changeIncidentState']> {
+    throw new Error('MOCK_OPERATION_NOT_SUPPORTED');
+  }
+
+  async changeIncidentSeverity(..._args: Parameters<OperationalGateway['changeIncidentSeverity']>): ReturnType<OperationalGateway['changeIncidentSeverity']> {
+    throw new Error('MOCK_OPERATION_NOT_SUPPORTED');
+  }
+
+  async assignIncidentCommander(..._args: Parameters<OperationalGateway['assignIncidentCommander']>): ReturnType<OperationalGateway['assignIncidentCommander']> {
+    throw new Error('MOCK_OPERATION_NOT_SUPPORTED');
+  }
+
+  async resolveIncident(..._args: Parameters<OperationalGateway['resolveIncident']>): ReturnType<OperationalGateway['resolveIncident']> {
+    throw new Error('MOCK_OPERATION_NOT_SUPPORTED');
+  }
 }

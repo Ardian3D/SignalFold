@@ -54,6 +54,10 @@ export const projectIncident = (record: Record<string, unknown>): Incident => ({
   resolvedAt: typeof (record.resolved_at ?? record.resolvedAt) === 'string' ? String(record.resolved_at ?? record.resolvedAt) : undefined,
   closedAt: typeof (record.closed_at ?? record.closedAt) === 'string' ? String(record.closed_at ?? record.closedAt) : undefined,
   recoveryVerified: bool(record, 'recoveryVerified', 'recovery_verified'),
+  resolutionSummary: typeof (record.resolution_summary ?? record.resolutionSummary) === 'string' ? String(record.resolution_summary ?? record.resolutionSummary) : undefined,
+  rootCauseKnown: typeof (record.root_cause_known ?? record.rootCauseKnown) === 'string' ? String(record.root_cause_known ?? record.rootCauseKnown) as Incident['rootCauseKnown'] : undefined,
+  remainingRisk: typeof (record.remaining_risk ?? record.remainingRisk) === 'string' ? String(record.remaining_risk ?? record.remainingRisk) : undefined,
+  resolutionOverrideReason: typeof (record.resolution_override_reason ?? record.resolutionOverrideReason) === 'string' && String(record.resolution_override_reason ?? record.resolutionOverrideReason).trim() ? String(record.resolution_override_reason ?? record.resolutionOverrideReason) : undefined,
   publicVisibility: (record.public_visibility ?? record.publicVisibility) as Incident['publicVisibility'],
   isDemo: bool(record, 'isDemo', 'is_demo'),
   reopenedCount: Number(record.reopened_count ?? record.reopenedCount ?? 0),
@@ -152,6 +156,7 @@ export class Base44OperationalGateway implements OperationalGateway {
 
   async getIncident(organizationId: string, incidentId: string): Promise<IncidentReadModel> {
     const result = await invoke('get-incident', { organizationId, incidentId });
+    const authority = result.authority && typeof result.authority === 'object' ? result.authority as Record<string, unknown> : null;
     return {
       incident: projectIncident(result.incident as Record<string, unknown>),
       service: result.service ? projectService(result.service as Record<string, unknown>) : null,
@@ -160,6 +165,16 @@ export class Base44OperationalGateway implements OperationalGateway {
       taskSummary: projectTaskSummary(result.taskSummary as Record<string, unknown> ?? {}),
       timeline: ((result.timeline ?? result.updates ?? []) as Record<string, unknown>[]).map(projectTimeline),
       assignmentOptions: projectAssignmentOptions((result.assignmentOptions ?? []) as unknown[]),
+      commanderOptions: projectAssignmentOptions((result.commanderOptions ?? result.assignmentOptions ?? []) as unknown[]),
+      openCriticalTaskCount: Number(result.openCriticalTaskCount ?? 0),
+      allowedTransitions: Array.isArray(result.allowedTransitions) ? result.allowedTransitions.map(String) as Incident['status'][] : [],
+      authority: authority ? {
+        canChangeStatus: authority.canChangeStatus === true,
+        canChangeSeverity: authority.canChangeSeverity === true,
+        canAssignCommander: authority.canAssignCommander === true,
+        canResolve: authority.canResolve === true,
+        canClose: authority.canClose === true,
+      } : undefined,
       capabilities: Array.isArray(result.capabilities) ? result.capabilities.map(String) : [],
     };
   }
@@ -233,5 +248,21 @@ export class Base44OperationalGateway implements OperationalGateway {
 
   async resetDemoData(organizationId: string, requestId: string) {
     return (await invoke('reset-demo-data', { organizationId, confirmation: 'RESET DEMO DATA', requestId })) as { deleted: number };
+  }
+
+  async changeIncidentState(input: import('@/features/incidents/domain/incidentAuthorityTypes').ChangeIncidentStateInput) {
+    return projectIncident((await invoke('change-incident-state', input as unknown as Record<string, unknown>)).incident as Record<string, unknown>);
+  }
+
+  async changeIncidentSeverity(input: import('@/features/incidents/domain/incidentAuthorityTypes').ChangeIncidentSeverityInput) {
+    return projectIncident((await invoke('change-incident-severity', input as unknown as Record<string, unknown>)).incident as Record<string, unknown>);
+  }
+
+  async assignIncidentCommander(input: import('@/features/incidents/domain/incidentAuthorityTypes').AssignIncidentCommanderInput) {
+    return projectIncident((await invoke('assign-incident-commander', input as unknown as Record<string, unknown>)).incident as Record<string, unknown>);
+  }
+
+  async resolveIncident(input: import('@/features/incidents/domain/incidentAuthorityTypes').ResolveIncidentInput) {
+    return projectIncident((await invoke('resolve-incident', input as unknown as Record<string, unknown>)).incident as Record<string, unknown>);
   }
 }

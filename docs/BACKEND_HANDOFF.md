@@ -649,13 +649,12 @@ retained even when hosted two-user exercise is NOT AVAILABLE.
 - No auth configuration push during Phase 05 finalization
 - No Phase 06 backend added
 
-### Deferred Phase 06 work
+### Deferred after Phase 05 (completed in Phase 06 where listed)
 
-Explicitly deferred:
+Phase 06 implements status/severity/commander/resolve/close authority.
+Still deferred beyond Phase 06:
 
-- Incident status / severity transitions
-- Commander assignment
-- Resolution, reopening, and closing workflows
+- Reopening resolved Incidents
 - Public status updates
 - Realtime subscriptions
 - DeepSeek / AiRun
@@ -673,5 +672,272 @@ Explicitly deferred:
 ### Major Phase 05 completion statement
 
 Major Phase 05 (Tasks, Timeline, and Coordination) is complete and accepted.
-The branch is ready for Backend Phase 06: Incident Authority, State Transitions
-& Resolution.
+Merged to main as `f697d5d` (includes original commit `f9b268d`).
+
+## 14 / Major Phase 06 — Incident Authority, Controlled State Transitions & Resolution
+
+**Status:** COMPLETE on
+`backend/base44-phase-06-incident-authority-resolution` — implemented, deployed,
+and product-owner hosted runtime verified.
+
+**Branch:** `backend/base44-phase-06-incident-authority-resolution`
+**Main baseline:** `f697d5d` (Phase 05 merge)
+**Phase 05 ancestry:** `f9b268d` is an ancestor of `origin/main`.
+
+### Entity manifest
+
+Unchanged seven-entity set:
+
+1. User
+2. Organization
+3. Membership
+4. Service
+5. Incident (schema extended)
+6. IncidentUpdate (event enum extended)
+7. IncidentTask
+
+No Postmortem, AiRun, Notification, or AuditLog entity.
+
+### Incident schema extensions
+
+Path: `base44/entities/incident.jsonc`
+
+Added when missing:
+
+- `root_cause_known`: `yes` | `no` | `unknown`
+- `resolution_override_reason`: bounded string for critical-task override
+
+Preserved: status machine values, severity, commander, timestamps
+(`acknowledged_at`, `resolved_at`, `closed_at`), resolution_summary,
+recovery_verified, remaining_risk, demo markers, AI compatibility fields.
+
+Direct client RLS remains denied for create/read/update/delete.
+
+### IncidentUpdate compatibility
+
+Physical field remains `event_type`.
+
+Authority events (physical names):
+
+- `status_changed`
+- `severity_changed`
+- `commander_assigned`
+- `commander_reassigned`
+- `commander_unassigned`
+- `incident_resolved`
+- `incident_closed`
+
+Phase 04/05 task and note events remain valid. Timeline remains append-only;
+reads perform zero writes.
+
+### State machine
+
+Domain: `src/features/incidents/domain/incidentStateMachine.ts`
+
+Statuses: reported, triaging, investigating, identified, monitoring, resolved, closed.
+
+Non-resolution transitions enforced server-side in `change-incident-state`.
+`resolved` is never entered via generic state change — only via `resolve-incident`.
+`resolved -> investigating` (reopen) is excluded.
+
+### Role contract (MVP)
+
+- Reporter / Responder: read authority state; existing note/task rights unchanged; no Incident status/severity/commander/resolve/close mutations.
+- Incident Manager / Admin: status (allowed transitions), severity (reason required), commander assign/reassign/unassign, resolve, close resolved.
+- Unknown role: deny privileged mutations.
+- Base44 `User.role` never grants SignalFold authority.
+
+### Backend functions
+
+| Function | Purpose |
+|---|---|
+| `change-incident-state` | Conditional status transitions + close resolved |
+| `change-incident-severity` | Conditional severity change; `severity_source=human` |
+| `assign-incident-commander` | Assign/reassign/unassign eligible commanders |
+| `resolve-incident` | Resolve with recovery, root cause, risk, critical override |
+
+Helpers follow Phase 05 function-local copy pattern:
+
+- `coordination.ts`
+- `incident-authority.ts`
+
+Shared source of truth also kept under `base44/functions/_shared/`.
+
+### Concurrency and idempotency
+
+- Status: `updateMany` match on `id` + `organization_id` + `status=expectedStatus`
+- Severity: match on severity expected value
+- Commander: match on current commander precondition
+- Resolve: match on expectedStatus
+- Losing concurrent callers receive conflict codes and append no event
+- `requestId` reuses prior logical event and returns reconciled DTO
+
+### Timestamp rules
+
+- First exit from `reported` sets `acknowledged_at` once
+- Resolve sets `resolved_at`; preserves `acknowledged_at`
+- Close from `resolved` sets `closed_at`; preserves `resolved_at`
+- Client cannot set authority timestamps
+
+### Open critical-task guard
+
+Server counts tasks with `priority=critical` and status in
+`todo|in_progress|blocked`. Default reject with `OPEN_CRITICAL_TASKS`.
+Override requires `overrideOpenCriticalTasks=true` + bounded reason.
+
+### Optional service recovery
+
+When `restoreServiceOperational=true` and affected service is non-operational
+and same-org: set service `operational_status=operational` after successful
+resolution. Not claimed atomic multi-entity transaction.
+
+### Frontend integration
+
+- Gateway: `changeIncidentState`, `changeIncidentSeverity`,
+  `assignIncidentCommander`, `resolveIncident`
+- Live Incident Room compact authority strip + collapsed forms
+- Uses Phase 05 operational action affordances
+- Tabs/shell preserved; Details shows resolution read-only block when resolved/closed
+- Mock mode does not call Base44 authority mutations
+
+### Read model
+
+`get-incident` returns zero-write authority presentation:
+
+- allowedTransitions
+- authority capability flags
+- commanderOptions (active IM/Admin only)
+- openCriticalTaskCount
+
+### Tests
+
+Phase 06 automated coverage:
+
+- `src/test/phase06IncidentAuthority.test.ts`
+- `src/test/phase06IncidentAuthorityUi.test.tsx`
+
+Serial Vitest: `npx vitest run --maxWorkers=1`.
+
+### Explicitly out of scope (confirmed)
+
+Reopen, DeepSeek, AI triage/AiRun, realtime, postmortem backend, public status,
+notifications, AuditLog, team invite/role mutation, external connectors.
+
+### Hosted deployment and runtime
+
+Targeted entity + function deployment and product-owner hosted verification were
+completed as gates. Multi-member commander assignment remains **NOT AVAILABLE**
+when no second real active IM/Admin member exists (no fabricated users).
+
+### Commander null/absent CAS bug and correction
+
+The original `assign-incident-commander` used an empty-string sentinel for the
+unassigned commander precondition while the persisted field was `null`/absent,
+causing `COMMANDER_CONFLICT` (HTTP 409) on first assignment. Corrected to use
+`null` CAS values (`currentCommander ?? null`, `nextCommander ?? null`) and the
+function was redeployed. Hosted verification: first assignment HTTP 200,
+persistence after refresh PASSED, exactly one `commander_assigned` timeline
+event across five refreshes.
+
+### Final Dashboard / Incident List propagation correction
+
+Earlier Phase 06 deployment intentionally did not redeploy `list-incidents` and
+`get-dashboard-overview` because they were believed to require no packaging
+changes. Hosted evidence showed the live Incident List / Dashboard did not
+expose the full Phase 06 authority state.
+
+Root cause (verified by pulling deployed functions): the deployed versions of
+both read-model functions contained the **Phase 04/05 `safeIncident`
+projection**, which omitted authority fields:
+
+- `get-dashboard-overview` deployed `safeIncident` dropped `commander_user_id`,
+  `resolved_at`, `closed_at`, `acknowledged_at`, `impact_summary`,
+  `observed_start_at`, resolution fields, `created_date`, `updated_date`.
+- `list-incidents` deployed `safeIncident` dropped `resolution_summary`,
+  `root_cause_known`, `remaining_risk`, `resolution_override_reason`.
+
+The Phase 06 working tree already carried the corrected full projection in
+`base44/functions/_shared/operations.ts`,
+`base44/functions/list-incidents/operations.ts`, and
+`base44/functions/get-dashboard-overview/operations.ts`, but those functions
+were never redeployed. The frontend gateway (`projectIncident`) already mapped
+every authority field, the Incident List already read `status` / `severity`
+query parameters and passed them to the backend, and query invalidation already
+covered the `['operations', mode, org.id]` scope — no frontend change was
+required.
+
+Correction: targeted redeployment of `list-incidents` and
+`get-dashboard-overview` with the Phase 06 projections. No entity, auth, or
+mutation-function changes.
+
+### Final hosted runtime verification (post redeployment)
+
+| Check | Result |
+|---|---|
+| Incident List final status in DTO | PASSED — closed incident present |
+| Incident List severity in DTO | PASSED — SEV3 present per row |
+| Incident List commander projection | PASSED — `commander_user_id` in DTO; never rendered raw |
+| Status filter `?status=closed` | PASSED — only closed rows returned |
+| Severity filter `?severity=SEV3` | PASSED — only SEV3 rows returned |
+| Commander filter | **NOT AVAILABLE** — not present in approved live surface |
+| Page refresh preserves state | PASSED |
+| Dashboard active metrics | PASSED — ACTIVE 1, SEV1/SEV2 0, RESOLVED THIS WEEK 1, OPEN TASKS 0 |
+| Dashboard Needs Attention | PASSED |
+| Dashboard Recent Activity | PASSED — authority events bounded, no duplication |
+| Dashboard five-refresh stability | PASSED — zero authority-mutation writes |
+| Screenshots | `30-incident-list-final-propagation.png`, `31-dashboard-final-propagation.png`, `32-incident-list-status-filter.png`, `33-incident-list-severity-filter.png` |
+
+### Open critical-task resolution guard disposition
+
+HOSTED OPEN-CRITICAL RESOLUTION GUARD:
+NOT AVAILABLE — AUTOMATED SERVER CONTRACT COVERAGE PASSED
+
+No safe existing open CRITICAL Task was available on the verified incident, and
+creating another runtime Task would add unnecessary hosted data. Automated
+coverage verifies the full server contract: todo / in_progress / blocked
+critical tasks block resolution, done / cancelled do not, override flag and
+override reason are required, the server calculates the count, a rejected
+attempt appends no resolution event, and a successful override appends exactly
+one `incident_resolved` event.
+
+### Zero-write read confirmation
+
+- Timeline five-refresh zero-write: PASSED
+- Dashboard five-refresh zero-write: PASSED (authority reads append no events)
+- `list-incidents`, `get-dashboard-overview`, `get-incident` remain read-only
+
+### Explicitly out of scope (confirmed final)
+
+Reopen, DeepSeek, AI triage/AiRun, realtime, postmortem backend, public status,
+notifications, AuditLog, team invite/role mutation, external connectors.
+
+### Remaining advisories
+
+- Vite production build large-chunk warning for the main bundle remains an
+  accepted non-blocking advisory.
+- React Router future-flag advisory (if present in dev) remains environmental.
+
+### Major Phase 06 completion statement
+
+Major Phase 06 (Incident Authority, Controlled State Transitions & Resolution)
+is complete and accepted on
+`backend/base44-phase-06-incident-authority-resolution`:
+
+- Commander PASSED (null-CAS corrected, hosted verified)
+- Severity PASSED
+- Status PASSED
+- Resolution PASSED
+- Close PASSED
+- Persistence PASSED
+- Timeline zero-write PASSED
+- Dashboard propagation PASSED
+- Incident List propagation PASSED
+- Responsive PASSED (430 / 390 / 360)
+- Network / out-of-scope audit PASSED
+- Critical guard explicitly documented NOT AVAILABLE with complete automated
+  coverage
+- Final baseline: 49 test files / 372 tests, passed twice consecutively under
+  the serial Vitest configuration
+- TypeScript, lint, and production build PASS
+
+Recommended next step: backend Phase 07 (DeepSeek triage) and human review.
