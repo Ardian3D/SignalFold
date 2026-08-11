@@ -1,12 +1,25 @@
 import { createClientFromRequest } from 'npm:@base44/sdk';
 import { authorizeActiveMembership, failure, json, loadActiveMembers, loadIncidentTasks, loadIncidentTimeline, safeTimelineUpdate } from './coordination.ts';
 import { safeIncident, safeService } from './operations.ts';
+import { canMutateIncidentAuthority, countOpenCriticalTasks, resolvableStatuses, transitions } from './incident-authority.ts';
 
-const capabilitiesForRole = (role: string) => {
-  if (role === 'admin') return ['CREATE_TASK', 'CLAIM_TASK', 'UPDATE_OWN_TASK', 'REASSIGN_TASK', 'ADD_INTERNAL_NOTE'];
-  if (role === 'incident_manager') return ['CREATE_TASK', 'CLAIM_TASK', 'UPDATE_OWN_TASK', 'REASSIGN_TASK', 'ADD_INTERNAL_NOTE'];
+const taskCapabilities = (role: string) => {
+  if (role === 'admin' || role === 'incident_manager') return ['CREATE_TASK', 'CLAIM_TASK', 'UPDATE_OWN_TASK', 'REASSIGN_TASK', 'ADD_INTERNAL_NOTE'];
   if (role === 'responder') return ['CREATE_TASK', 'CLAIM_TASK', 'UPDATE_OWN_TASK', 'ADD_INTERNAL_NOTE'];
   return ['ADD_INTERNAL_NOTE'];
+};
+
+const authorityCapabilities = (role: string, status: string) => {
+  const canMutate = canMutateIncidentAuthority(role);
+  const allowed = transitions[status] ?? [];
+  const nonResolution = allowed.filter((value) => value !== 'resolved');
+  return {
+    canChangeStatus: canMutate && nonResolution.length > 0,
+    canChangeSeverity: canMutate && status !== 'closed',
+    canAssignCommander: canMutate && status !== 'closed',
+    canResolve: canMutate && resolvableStatuses.has(status),
+    canClose: canMutate && status === 'resolved',
+  };
 };
 
 Deno.serve(async (req) => {
@@ -22,6 +35,10 @@ Deno.serve(async (req) => {
     const timeline = await loadIncidentTimeline(base44, access.organizationId, incident.id, 'desc');
     const tasks = await loadIncidentTasks(base44, access.organizationId, incident.id, {});
     const members = await loadActiveMembers(base44, access.organizationId);
+    const openCriticalTaskCount = await countOpenCriticalTasks(base44, access.organizationId, incident.id);
+    const authority = authorityCapabilities(access.membership.role, String(incident.status));
+    const allowedTransitions = (transitions[String(incident.status)] ?? []).filter((value) => value !== 'resolved');
+    const commanderCandidates = members.filter((member) => member.role === 'incident_manager' || member.role === 'admin');
     return json({
       incident: safeIncident(incident),
       service: service && service.organization_id === access.organizationId ? safeService(service) : null,
@@ -32,7 +49,18 @@ Deno.serve(async (req) => {
       timeline: timeline.items.map(safeTimelineUpdate),
       updates: timeline.items.map(safeTimelineUpdate),
       assignmentOptions: members,
-      capabilities: capabilitiesForRole(access.membership.role),
+      commanderOptions: commanderCandidates,
+      openCriticalTaskCount,
+      allowedTransitions,
+      authority,
+      capabilities: [
+        ...taskCapabilities(access.membership.role),
+        ...(authority.canChangeStatus ? ['CHANGE_INCIDENT_STATUS'] : []),
+        ...(authority.canChangeSeverity ? ['CHANGE_SEVERITY'] : []),
+        ...(authority.canAssignCommander ? ['ASSIGN_COMMANDER'] : []),
+        ...(authority.canResolve ? ['RESOLVE_INCIDENT'] : []),
+        ...(authority.canClose ? ['CLOSE_INCIDENT'] : []),
+      ],
     });
   } catch (error) {
     return failure(error);

@@ -1,5 +1,12 @@
 import type { DashboardOverview } from '@/features/dashboard/domain/dashboardTypes';
-import type { Incident, IncidentCreateInput, IncidentFilters, IncidentUpdate } from '@/features/incidents/domain/incidentTypes';
+import type {
+  AssignIncidentCommanderInput,
+  ChangeIncidentSeverityInput,
+  ChangeIncidentStateInput,
+  IncidentAuthorityCapabilities,
+  ResolveIncidentInput,
+} from '@/features/incidents/domain/incidentAuthorityTypes';
+import type { Incident, IncidentCreateInput, IncidentFilters, IncidentStatus, IncidentUpdate } from '@/features/incidents/domain/incidentTypes';
 import type { Service, ServiceInput } from '@/features/services/domain/serviceTypes';
 import type { IncidentTask, IncidentTaskFilters, TaskSummary } from '@/features/tasks/domain/taskTypes';
 import type { IncidentTimeline } from '@/features/timeline/domain/timelineTypes';
@@ -14,6 +21,10 @@ export type IncidentReadModel = {
   taskSummary: TaskSummary;
   timeline: IncidentUpdate[];
   assignmentOptions: SafeOrganizationMember[];
+  commanderOptions?: SafeOrganizationMember[];
+  openCriticalTaskCount?: number;
+  allowedTransitions?: IncidentStatus[];
+  authority?: IncidentAuthorityCapabilities;
   capabilities: string[];
 };
 export interface OperationalGateway {
@@ -35,4 +46,8 @@ export interface OperationalGateway {
   listTeamTaskLoad(organizationId: string): Promise<Array<SafeOrganizationMember & TaskSummary>>;
   seedDemoData(organizationId: string, requestId: string): Promise<{ organizationId: string; created: number }>;
   resetDemoData(organizationId: string, requestId: string): Promise<{ deleted: number }>;
+  changeIncidentState(input: ChangeIncidentStateInput): Promise<Incident>;
+  changeIncidentSeverity(input: ChangeIncidentSeverityInput): Promise<Incident>;
+  assignIncidentCommander(input: AssignIncidentCommanderInput): Promise<Incident>;
+  resolveIncident(input: ResolveIncidentInput): Promise<Incident>;
 }
