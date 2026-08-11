@@ -32,6 +32,7 @@ import {
 } from '@/features/incidents/domain/incidentStateMachine';
 import { getTaskActionVisibility, type IncidentTask } from '@/features/tasks/domain/taskTypes';
 import type { SafeOrganizationMember } from '@/features/organization/domain/organizationTypes';
+import { AiTriagePanel } from './AiTriagePanel';
 
 const mode = 'base44';
 const emptySummary = { total: 0, todo: 0, inProgress: 0, blocked: 0, done: 0, cancelled: 0, criticalOpen: 0, overdue: 0, unassigned: 0 };
@@ -220,6 +221,20 @@ export function LiveIncidentRoom() {
     onSuccess: async () => { setAuthorityPanel(null); setAuthorityError(''); authorityRequest.current = id(); await invalidateIncident(); },
     onError: async () => { setAuthorityError('RESOLUTION FAILED. REVIEW CRITICAL TASKS AND REQUIRED FIELDS.'); await invalidateIncident(); },
   });
+  const analyzeIncident = useMutation({
+    mutationFn: (options?: { forceRegenerate?: boolean; confirmRegenerate?: boolean }) => gateway.analyzeIncident({ organizationId: org.id, incidentId: incidentId!, requestId: id(), ...options }),
+    onSuccess: async () => { await invalidateIncident(); },
+    onError: async () => { await invalidateIncident(); },
+  });
+  const applyIncidentAnalysis = useMutation({
+    mutationFn: (input: import('@/features/incidents/domain/incidentAiTypes').ApplyIncidentAnalysisInput) => gateway.applyIncidentAnalysis(input),
+    onSuccess: async () => { await invalidateIncident(); },
+    onError: async () => { await invalidateIncident(); },
+  });
+  const aiGateway = useMemo(() => ({
+    analyzeIncident: (input: { organizationId: string; incidentId: string; requestId: string; forceRegenerate?: boolean; confirmRegenerate?: boolean }) => analyzeIncident.mutateAsync(input),
+    applyIncidentAnalysis: (input: import('@/features/incidents/domain/incidentAiTypes').ApplyIncidentAnalysisInput) => applyIncidentAnalysis.mutateAsync(input),
+  }), [analyzeIncident, applyIncidentAnalysis]);
 
   if (incidentQuery.isPending) return <State>LOADING INCIDENT...</State>;
   if (incidentQuery.isError) return <State retry={() => void incidentQuery.refetch()}>INCIDENT NOT FOUND OR ACCESS IS UNAVAILABLE.</State>;
@@ -231,6 +246,7 @@ export function LiveIncidentRoom() {
   const openTaskCount = taskResult.summary.todo + taskResult.summary.inProgress + taskResult.summary.blocked;
   const openCriticalTaskCount = incidentQuery.data.openCriticalTaskCount ?? taskResult.tasks.filter(task => task.priority === 'critical' && ['todo', 'in_progress', 'blocked'].includes(task.status)).length;
   const allowedTransitions = incidentQuery.data.allowedTransitions ?? getAllowedNonResolutionTransitions(incident.status);
+  const canRunAiTriage = incidentQuery.data.capabilities.includes('RUN_AI_TRIAGE') && role !== 'responder';
   const authority = incidentQuery.data.authority ?? {
     canChangeStatus: canChangeIncidentStatus(role, incident.status),
     canChangeSeverity: canChangeIncidentSeverity(role, incident.status),
@@ -298,6 +314,20 @@ export function LiveIncidentRoom() {
           <div className="flex flex-wrap gap-2"><button type="submit" disabled={resolveIncident.isPending} className={primaryActionButton}>{resolveIncident.isPending ? 'RESOLVING...' : 'CONFIRM RESOLUTION'}</button><button type="button" className={neutralActionButton} onClick={() => setAuthorityPanel(null)}>CANCEL</button></div>
         </form>
       )}
+      <div className="mt-5">
+        <AiTriagePanel
+          organizationId={org.id}
+          incidentId={incidentId!}
+          canRun={canRunAiTriage}
+          aiSuggestion={incidentQuery.data.aiSuggestion}
+          allowedTransitions={allowedTransitions}
+          status={incident.status}
+          severity={incident.severity}
+          gateway={aiGateway}
+          onAnalyzed={() => void invalidateIncident()}
+          onApplied={() => void invalidateIncident()}
+        />
+      </div>
     </Panel>
     <div className="w-full min-w-0 border-b border-[#242522]" role="tablist" aria-label="Incident Room Sections">
       {tabs.map(tab => <button key={tab} type="button" id={`tab-${tab}`} role="tab" aria-selected={activeTab === tab} aria-controls={`panel-${tab}`} onClick={() => setActiveTab(tab)} className={`${tabButton} ${activeTab === tab ? tabButtonActive : tabButtonInactive}`}>{tab}</button>)}

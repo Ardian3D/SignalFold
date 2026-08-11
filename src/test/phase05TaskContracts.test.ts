@@ -10,9 +10,9 @@ const schema = (name: string) => JSON.parse(readFileSync(resolve(root, 'base44/e
 const source = (path: string) => readFileSync(resolve(root, path), 'utf8');
 
 describe('Phase 05 task and timeline contracts', () => {
-  it('preserves the full Phase 05 entity manifest and excludes later resources', () => {
-    expect(readdirSync(resolve(root, 'base44/entities')).sort()).toEqual(['User.jsonc', 'incident-task.jsonc', 'incident-update.jsonc', 'incident.jsonc', 'membership.jsonc', 'organization.jsonc', 'service.jsonc'].sort());
-    expect(readdirSync(resolve(root, 'base44/entities')).some(file => /postmortem|airun|notification|audit/i.test(file))).toBe(false);
+  it('preserves the full Phase 05 entity manifest and excludes later out-of-scope resources', () => {
+    expect(readdirSync(resolve(root, 'base44/entities')).sort()).toEqual(['User.jsonc', 'airun.jsonc', 'incident-task.jsonc', 'incident-update.jsonc', 'incident.jsonc', 'membership.jsonc', 'organization.jsonc', 'service.jsonc'].sort());
+    expect(readdirSync(resolve(root, 'base44/entities')).some(file => /postmortem|notification|audit/i.test(file))).toBe(false);
   });
 
   it('defines canonical task schema, enums, and direct-write denial', () => {

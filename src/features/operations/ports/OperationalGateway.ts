@@ -6,6 +6,13 @@ import type {
   IncidentAuthorityCapabilities,
   ResolveIncidentInput,
 } from '@/features/incidents/domain/incidentAuthorityTypes';
+import type {
+  AnalyzeIncidentInput,
+  AnalyzeIncidentResult,
+  ApplyIncidentAnalysisInput,
+  ApplyIncidentAnalysisResult,
+  AiSuggestion,
+} from '@/features/incidents/domain/incidentAiTypes';
 import type { Incident, IncidentCreateInput, IncidentFilters, IncidentStatus, IncidentUpdate } from '@/features/incidents/domain/incidentTypes';
 import type { Service, ServiceInput } from '@/features/services/domain/serviceTypes';
 import type { IncidentTask, IncidentTaskFilters, TaskSummary } from '@/features/tasks/domain/taskTypes';
@@ -26,6 +33,7 @@ export type IncidentReadModel = {
   allowedTransitions?: IncidentStatus[];
   authority?: IncidentAuthorityCapabilities;
   capabilities: string[];
+  aiSuggestion?: AiSuggestion;
 };
 export interface OperationalGateway {
   listServices(organizationId: string, includeInactive?: boolean): Promise<Service[]>;
@@ -50,4 +58,6 @@ export interface OperationalGateway {
   changeIncidentSeverity(input: ChangeIncidentSeverityInput): Promise<Incident>;
   assignIncidentCommander(input: AssignIncidentCommanderInput): Promise<Incident>;
   resolveIncident(input: ResolveIncidentInput): Promise<Incident>;
+  analyzeIncident(input: AnalyzeIncidentInput): Promise<AnalyzeIncidentResult>;
+  applyIncidentAnalysis(input: ApplyIncidentAnalysisInput): Promise<ApplyIncidentAnalysisResult>;
 }
