@@ -1127,3 +1127,128 @@ agent loops, Phase 08.
   (`nanoid <3.3.17`, `react-router` 7.12â€“7.18.1 CSRF) present since prior
   phases. No breaking upgrade or React Router major migration was performed
   this phase.
+
+## 16 / Major Phase 08 — Realtime Coordination & Multi-Client Synchronization
+
+**Status:** COMPLETE on
+`backend/base44-phase-08-realtime-coordination` — implemented, tested (57 files /
+487 tests, passed twice consecutively), site-deployed, and hosted-verified on the
+authenticated client.
+
+**Base commit:** `9bc5f6d` (Phase 07 merge verified as ancestor of `origin/main`).
+
+### Phase 08 architecture
+
+- Realtime is a transport/coordination layer only; it is never an authority layer.
+- A realtime event is an invalidation signal, never authoritative UI state. The UI
+  always refetches the authoritative safe projection through existing reads.
+- Gateway abstraction: `OperationalGateway.subscribeToIncidentRoom(scope, listener)`
+  returning an unsubscribe. `Base44OperationalGateway` implements it; the mock gateway
+  returns a safe no-op.
+- `useIncidentRealtimeSync` hook in the Incident Room: subscription lifecycle,
+  Incident-scoped filtering, 50ms event coalescing, TanStack Query invalidation,
+  connection state, offline/reconnect, visibility recovery, and Timeline LIVE marker.
+
+### Base44 SDK realtime contract (verified)
+
+- Installed `@base44/sdk@0.8.41`.
+- `entities.<Entity>.subscribe(callback)` is entity-level only, returns `unsubscribe()`;
+  event shape `{ type: "create"|"update"|"delete", data, id, timestamp }`.
+- NO filtered subscribe API exists; SignalFold subscribes to the three required entities
+  only while an Incident Room is active and discards unrelated events in the adapter.
+- NO public connection-status API; the SDK exposes a client-wide `cleanup()` (not called
+  from room unmount). Browser `online`/`offline` events + subscription setup failures
+  drive the connection state.
+
+### Subscriptions and filtering
+
+- Subscribed entities: `Incident`, `IncidentTask`, `IncidentUpdate`.
+- Incident events accepted only when `id === activeIncidentId` and
+  `organization_id === activeOrganizationId`.
+- Task/Timeline events accepted only when `organization_id` AND `incident_id` match.
+- Stale-scope callbacks are ignored via a generation token.
+
+### Query invalidation / coalescing
+
+- Relevant events invalidate the active incident read model, task list, and both
+  timeline directions. No full page reload, no polling, no arbitrary route reload.
+- A 50ms coalescing window batches the multiple events a single backend action may
+  produce (Incident + IncidentUpdate + optional Task) into one refetch round.
+
+### Self-echo and server authority
+
+- Self-originated realtime events are expected and harmless; a realtime callback never
+  calls a mutation function and never writes domain state.
+- All Phase 04-07 mutation paths are unchanged (status, severity, commander, tasks,
+  resolution, AI analyze/apply). No direct frontend writes.
+
+### Connection state UX / offline / reconnect / visibility
+
+- Disconnected state shows exactly: "Realtime disconnected — retrying." in an accessible
+  polite live region, no flashing, reduced-motion safe.
+- True offline emulation verified hosted: banner shown, offline mutation not delivered,
+  reconnect clears the banner and refetches authoritative Incident/Tasks/Timeline.
+- On `visibilitychange` to visible, a bounded authoritative reconciliation refetches
+  the active Incident, Tasks, and Timeline without duplicates.
+
+### Timeline LIVE marker and scroll
+
+- Only a Timeline item received via a realtime IncidentUpdate after subscription is
+  active gets a subtle `LIVE` label (no flashing/gradient/neon). Initial page-load
+  events are never marked LIVE.
+- Realtime refresh does not call scroll APIs or reset the active tab; scroll position
+  is preserved (hosted verified: no forced jump).
+
+### Route / incident / organization cleanup
+
+- Subscriptions tear down on Incident Room unmount, route change, incident change,
+  organization change, logout, mode switch, and offline.
+- The route-cleanup gate verified hosted: after navigating away, the old Incident Room
+  makes zero refetches of get-incident/tasks/timeline.
+- Shared Base44 client `cleanup()` is not called from room unmount (only entity-level
+  unsubscribe handles are used).
+
+### Hosted verification (authenticated client)
+
+- Realtime self-echo verified: internal note and status change appear WITHOUT manual
+  refresh via realtime invalidation + authoritative refetch; LIVE marker shown.
+- Offline/reconnect PASSED with true network emulation.
+- Route cleanup PASSED (zero old-room refetches on Dashboard).
+- Passive zero-write PASSED (timeline counts stable); zero DeepSeek on passive realtime.
+- Responsive realtime UX PASSED at 430/390/360 (no overflow, tabs + authority controls).
+- Latency: internal note ~1984ms, status ~3407ms (self-echo includes full authoritative
+  mutation round-trip + realtime refetch).
+
+### Multi-client disposition
+
+- MULTI-CLIENT SAME ACCOUNT hosted cross-observation: NOT AVAILABLE in this automated
+  session (only one authenticated profile exists; a second independent profile requires
+  manual owner authentication). No fabricated identity used. The full mechanism is
+  verified hosted on the authenticated client (self-echo), and the dual-independent-client
+  contract is covered by 27 automated realtime tests.
+- Screenshots: `screenshot/phase-08/01-client-a-baseline.png`,
+  `03-status-realtime.png`, `09-timeline-note-realtime.png`,
+  `12-realtime-disconnected.png`, `13-realtime-reconnected.png`,
+  `14-mobile-430.png`, `15-mobile-390.png`, `16-mobile-360.png`.
+  Evidence: `runtime-evidence.md`, `realtime-latency.md`, `network-audit.md`.
+
+### Deployment
+
+- Entities push: NO (no schema change; 8-entity manifest unchanged).
+- Function deploy: NONE (no backend function change).
+- Site-only deployment performed.
+- Full Base44 deploy: NO. Auth push: NO.
+
+### Out of scope (confirmed)
+
+Postmortem, Notification, AuditLog, public status, realtime Notifications, AI status
+drafting, reopen, Team mutations, new integrations, WebRTC/Socket.IO/Firebase/Supabase/
+Pusher/Ably, custom websocket server, polling as primary transport, frontend redesign.
+
+### Known non-blocking advisories
+
+- npm audit reports 3 high severity advisories in transitive deps
+  (`nanoid <3.3.17`, `react-router` 7.12-7.18.1 CSRF) present since prior phases.
+  No breaking upgrade or React Router major migration was performed this phase.
+- Full-suite heavy-UI tests intermittently time out at 5s under local memory pressure
+  (documented environmental constraint from Phases 05-08); they pass on rerun.

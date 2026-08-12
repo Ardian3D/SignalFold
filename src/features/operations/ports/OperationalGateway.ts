@@ -18,6 +18,7 @@ import type { Service, ServiceInput } from '@/features/services/domain/serviceTy
 import type { IncidentTask, IncidentTaskFilters, TaskSummary } from '@/features/tasks/domain/taskTypes';
 import type { IncidentTimeline } from '@/features/timeline/domain/timelineTypes';
 import type { SafeOrganizationMember } from '@/features/organization/domain/organizationTypes';
+import type { IncidentRealtimeEvent, IncidentRealtimeScope } from '../domain/realtimeTypes';
 
 export type IncidentListResult = { incidents: Incident[]; nextCursor: string | null };
 export type IncidentReadModel = {
@@ -60,4 +61,5 @@ export interface OperationalGateway {
   resolveIncident(input: ResolveIncidentInput): Promise<Incident>;
   analyzeIncident(input: AnalyzeIncidentInput): Promise<AnalyzeIncidentResult>;
   applyIncidentAnalysis(input: ApplyIncidentAnalysisInput): Promise<ApplyIncidentAnalysisResult>;
+  subscribeToIncidentRoom(scope: IncidentRealtimeScope, listener: (event: IncidentRealtimeEvent) => void): () => void;
 }

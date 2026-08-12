@@ -8,6 +8,7 @@ import type { IncidentTimeline } from '@/features/timeline/domain/timelineTypes'
 import type { SafeOrganizationMember } from '@/features/organization/domain/organizationTypes';
 import type { IncidentReadModel, OperationalGateway } from '../ports/OperationalGateway';
 import type { AiSuggestion, AnalyzeIncidentInput, AnalyzeIncidentResult, ApplyIncidentAnalysisInput, ApplyIncidentAnalysisResult } from '@/features/incidents/domain/incidentAiTypes';
+import type { IncidentRealtimeEvent, IncidentRealtimeScope, RealtimeChangeType } from '../domain/realtimeTypes';
 
 const unwrap = (value: unknown): unknown => value && typeof value === 'object' && 'data' in value ? (value as { data: unknown }).data : value;
 const invoke = async (name: string, input: Record<string, unknown>) => {
@@ -348,6 +349,63 @@ export class Base44OperationalGateway implements OperationalGateway {
       createdTasks: Array.isArray(result.createdTasks) ? result.createdTasks.map((item: Record<string, unknown>) => ({ id: String(item.id ?? ''), title: String(item.title ?? ''), priority: String(item.priority ?? ''), source: String(item.source ?? 'ai') })) : [],
       severityChanged: result.severityChanged === true,
       statusChanged: result.statusChanged === true,
+    };
+  }
+
+  subscribeToIncidentRoom(scope: IncidentRealtimeScope, listener: (event: IncidentRealtimeEvent) => void): () => void {
+    const client = getBase44Client(getBase44RuntimeConfig());
+    if (!client) return () => undefined;
+    const unsubscribes: Array<() => void> = [];
+
+    const onIncident = (event: Record<string, unknown>) => {
+      const data = event.data && typeof event.data === 'object' ? event.data as Record<string, unknown> : {};
+      const id = String(event.id ?? data.id ?? '');
+      const organizationId = String(data.organization_id ?? data.organizationId ?? '');
+      if (id === scope.incidentId && organizationId === scope.organizationId) {
+        listener({ entity: 'incident', changeType: (event.type as RealtimeChangeType) ?? 'update', recordId: id, timestamp: typeof event.timestamp === 'string' ? event.timestamp : undefined, organizationId, incidentId: id });
+      }
+    };
+
+    const onTask = (event: Record<string, unknown>) => {
+      const data = event.data && typeof event.data === 'object' ? event.data as Record<string, unknown> : {};
+      const id = String(event.id ?? data.id ?? '');
+      const organizationId = String(data.organization_id ?? data.organizationId ?? '');
+      const incidentId = String(data.incident_id ?? data.incidentId ?? '');
+      if (organizationId === scope.organizationId && incidentId === scope.incidentId) {
+        listener({ entity: 'task', changeType: (event.type as RealtimeChangeType) ?? 'update', recordId: id, timestamp: typeof event.timestamp === 'string' ? event.timestamp : undefined, organizationId, incidentId });
+      }
+    };
+
+    const onUpdate = (event: Record<string, unknown>) => {
+      const data = event.data && typeof event.data === 'object' ? event.data as Record<string, unknown> : {};
+      const id = String(event.id ?? data.id ?? '');
+      const organizationId = String(data.organization_id ?? data.organizationId ?? '');
+      const incidentId = String(data.incident_id ?? data.incidentId ?? '');
+      if (organizationId === scope.organizationId && incidentId === scope.incidentId) {
+        listener({ entity: 'timeline', changeType: (event.type as RealtimeChangeType) ?? 'create', recordId: id, timestamp: typeof event.timestamp === 'string' ? event.timestamp : undefined, organizationId, incidentId });
+      }
+    };
+
+    try {
+      unsubscribes.push(client.entities.Incident.subscribe(onIncident as never));
+    } catch {
+      // subscription setup failure is non-fatal; remaining subscriptions continue
+    }
+    try {
+      unsubscribes.push(client.entities.IncidentTask.subscribe(onTask as never));
+    } catch {
+      // ignore
+    }
+    try {
+      unsubscribes.push(client.entities.IncidentUpdate.subscribe(onUpdate as never));
+    } catch {
+      // ignore
+    }
+
+    return () => {
+      for (const unsubscribe of unsubscribes) {
+        try { unsubscribe(); } catch { /* ignore */ }
+      }
     };
   }
 }

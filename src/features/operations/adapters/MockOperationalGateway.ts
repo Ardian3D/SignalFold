@@ -98,4 +98,8 @@ export class MockOperationalGateway implements OperationalGateway {
   async applyIncidentAnalysis(..._args: Parameters<OperationalGateway['applyIncidentAnalysis']>): ReturnType<OperationalGateway['applyIncidentAnalysis']> {
     throw new Error('MOCK_OPERATION_NOT_SUPPORTED');
   }
+
+  subscribeToIncidentRoom(..._args: Parameters<OperationalGateway['subscribeToIncidentRoom']>): ReturnType<OperationalGateway['subscribeToIncidentRoom']> {
+    return () => undefined;
+  }
 }
