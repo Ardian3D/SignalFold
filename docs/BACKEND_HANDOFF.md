@@ -1252,3 +1252,74 @@ Pusher/Ably, custom websocket server, polling as primary transport, frontend red
   No breaking upgrade or React Router major migration was performed this phase.
 - Full-suite heavy-UI tests intermittently time out at 5s under local memory pressure
   (documented environmental constraint from Phases 05-08); they pass on rerun.
+
+## 16.1 / Phase 08 owner-approved bounded reconciliation fallback (PRD 1.1)
+
+### Hosted Base44 realtime limitation (proven)
+
+During hosted dual-independent-client verification (Phase 08 continuation):
+
+- Two independent persistent Camoufox profiles authenticated as the same account
+  (MULTI-CLIENT SAME ACCOUNT; identity aimxyz18 / ORGANIZATION ADMIN).
+- Both clients connected to the same safe Incident; baseline state agreed.
+- Client A performed a legal status transition; the server mutation succeeded.
+- The observing client received ZERO entity realtime frames and performed ZERO
+  realtime-triggered authoritative refetches, despite no manual refresh.
+- Deep transport diagnostics confirmed the client socket connects to
+  wss://base44.app/ws-user-apps/socket.io, authenticates, joins the
+  Incident / IncidentTask / IncidentUpdate rooms, and stays alive (heartbeat), but
+  Base44 hosted delivered no update_model frames in this environment for mutations
+  made through service-role backend functions.
+- SignalFold''s realtime implementation follows the documented
+  @base44/sdk@0.8.41 subscribe contract exactly; no adapter/hook defect was proven.
+
+### Owner-approved fallback decision
+
+The product owner approved a controlled architecture deviation (PRD 1.1):
+
+- Base44 realtime subscriptions remain the PRIMARY transport and stay mounted.
+- A SECONDARY BOUNDED AUTHORITATIVE RECONCILIATION safety net is added for the
+  active Incident Room only: while the Room is mounted, authenticated, online, and
+  document-visible, the hook performs an authoritative read reconciliation every
+  10 seconds.
+- The fallback is read-only (query invalidation/refetch only): it never creates or
+  mutates Incident/IncidentTask/IncidentUpdate, never calls AI, never reloads the
+  page, and never performs direct client writes.
+- The fallback stops when hidden, offline, unmounted, on route/incident/organization
+  change, logout, or backend-mode switch.
+- Fallback-discovered data is never marked LIVE; LIVE remains reserved for a genuine
+  Base44 subscription callback.
+- No fake connection status; "Realtime disconnected - retrying." remains reserved for
+  known browser offline / supported connection setup failure.
+- One logical scheduler (not three intervals); no overlapping ticks; one timer after
+  React Strict Mode stabilization.
+
+### Implementation
+
+- `src/features/operations/useIncidentRealtimeSync.ts` exports
+  `REALTIME_RECONCILIATION_INTERVAL_MS = 10_000` (single source of truth).
+- A single `setInterval` scheduler gates on
+  `active && organizationId && incidentId && online && visible && !mock && authenticated`,
+  reconciles the active Incident read model, active Tasks, and active Timeline (both
+  directions) through existing TanStack Query invalidation.
+- Realtime events still win: a subscription callback triggers the existing immediate
+  coalesced refetch and does not wait for the fallback tick.
+
+### Verification
+
+- Automated: new `src/test/phase08ReconciliationFallback.test.tsx` (15 tests) covers
+  scheduler start gating, one-tick Incident/Tasks/Timeline reconciliation, no
+  mutation/DeepSeek/reload/write, LIVE truthfulness (fallback does not set LIVE,
+  realtime callback does), visibility pause/resume, offline pause/immediate
+  reconnect, incident-switch timer cleanup, unmount cleanup, realtime+fallback
+  coexistence, request bounds over 60s, and React Strict Mode single-timer behavior.
+- Expected degraded propagation bound: normally <= approximately 12 seconds
+  (10-second scheduler plus request/render time). This is NOT realtime latency.
+- Hosted fallback gates F1-F8 results are recorded in
+  `screenshot/phase-08/runtime-evidence.md`.
+
+### PRD / docs
+
+- PRD_SignalFold.md updated to version 1.1 with a revision history entry dated
+  12 Aug 2026 and a minimal 18.2.1 degraded-realtime-fallback subsection.
+- No schema changes; no backend function changes; no entity/function deployment.
