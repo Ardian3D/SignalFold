@@ -1051,22 +1051,61 @@ verification is **PENDING** the product-owner action to configure the
   prompt injection defence, fingerprint/cache, timeline event counts, human
   review invariants, tenant isolation, and frontend behavior (analyze,
   review, apply, fallback, no direct writes, tabs preserved).
-- Final baseline: 54 test files / 459 tests, passed twice consecutively under
+- Final baseline: 54 test files / 460 tests, passed twice consecutively under
   the serial Vitest configuration.
 
-### Hosted runtime verification
+### Hosted runtime verification (all gates PASSED)
 
 - Gate 1 baseline PASSED: Analyze visible for Manager/Admin, no AI call on page
   load, manual controls present.
-- AI fallback PASSED (no key configured): clicking Analyze returns the safe
+- AI fallback PASSED (before key configured): clicking Analyze returns the safe
   `AI_NOT_CONFIGURED` fallback; no direct browser DeepSeek request; incident
   workflow unaffected.
+- Gate 2 PASSED: real hosted DeepSeek analysis with `DEEPSEEK_API_KEY`
+  configured. `analyze-incident` returned HTTP 200 with a structured AI
+  SUGGESTION (summary, suggested severity, category, impact, confidence, risk
+  flags, clarifying questions, recommended tasks, immediate next action, model
+  `deepseek-v4-flash`, generated timestamp, REVIEW PENDING). Browser never
+  called `api.deepseek.com` directly.
+- Gate 3 PASSED: suggestion survives refresh with REVIEW PENDING; severity and
+  status unchanged by analysis; zero AI tasks silently inserted; manual
+  authority controls intact.
+- Gate 4 PASSED: exactly 1 × AI ANALYSIS REQUESTED, 1 × AI ANALYSIS COMPLETED,
+  0 × AI ANALYSIS FAILED; five-refresh counts stable (zero-write).
+- Gate 5 PASSED: REGENERATE requires explicit confirmation; cached successful
+  result reused without a second provider call or duplicate AiRun/events.
+- Gate 6 PASSED: human review/editor editable for all fields; one of 3 AI
+  recommended tasks selected; explicit human severity acceptance with reason;
+  legal status transition selected (reported → triaging).
+- Gate 7 PASSED: APPLY REVIEWED SUGGESTIONS returned HTTP 200; review status
+  APPLIED after refresh; accepted metadata persists (category payments,
+  ai_summary, ai_confidence 0.8, ai_risk_flags, ai_analysis_version triage-v1,
+  ai_last_analyzed_at); severity SEV2 (severity_source=ai_suggested); status
+  triaging. AI itself caused no autonomous transition.
+- Gate 8 PASSED: 1 × SEVERITY CHANGED, 1 × STATUS CHANGED, 1 × TASK CREATED,
+  1/1/0 AI counts stable; five-refresh zero-write.
+- Gate 9 PASSED: selected AI task created exactly once (source=ai), not
+  auto-assigned, normal Phase 05 controls available.
 - Responsive PASSED at 430 / 390 / 360 (AI surface, no overflow, tabs +
   manual controls usable).
-- Gates 2–9 (AI suggestion success, cache, human review, apply, AI tasks,
-  AI timeline success counts) are PENDING the `DEEPSEEK_API_KEY` owner action.
-- Screenshots: `screenshot/phase-07/01-ai-baseline.png`,
-  `02-ai-fallback.png`, `11-mobile-430.png`, `12-mobile-390.png`,
+- Screenshots: `screenshot/phase-07/01-ai-baseline.png`, `02-ai-suggestion.png`,
+  `03-ai-pending-review-after-refresh.png`, `04-ai-timeline.png`,
+  `05-ai-timeline-zero-write.png`, `06-ai-cache-regeneration-guard.png`,
+  `07-human-review.png`, `08-human-review-applied.png`,
+  `09-human-apply-timeline.png`, `10-ai-reviewed-task.png`,
+  `11-mobile-430.png`, `12-mobile-390.png`, `13-mobile-360.png`.
+  Network audit: `screenshot/phase-07/network-audit.md`.
+
+### Phase 07 read-model correction (found during hosted Gate 7 verification)
+
+- Root cause: `get-incident` `safeIncident` projection omitted the AI-accepted
+  Incident fields (category, ai_summary, ai_confidence, ai_risk_flags,
+  ai_analysis_version, ai_last_analyzed_at). The data was persisted by
+  `apply-incident-analysis` but not returned to the frontend read model.
+- Fix: added the fields to `get-incident/operations.ts` `safeIncident` and the
+  shared/local `safeIncidentAuthority` projections. Regression test added.
+- Deployed: `get-incident` only.
+- Commit: `83c0bc7`.
   `13-mobile-360.png`. Network audit: `screenshot/phase-07/network-audit.md`.
 
 ### Deployments
