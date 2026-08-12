@@ -252,6 +252,17 @@ describe('Phase 07 get-incident read model', () => {
     expect(entry).not.toContain('.create(');
     expect(entry).not.toContain('updateMany');
   });
+
+  it('projects AI-accepted Incident fields in the read model', () => {
+    const operations = read('base44/functions/get-incident/operations.ts');
+    for (const field of ['category', 'ai_summary', 'ai_confidence', 'ai_risk_flags', 'ai_analysis_version', 'ai_last_analyzed_at']) {
+      expect(operations, field).toContain(`${field}:r.${field}`);
+    }
+    const authority = read('base44/functions/_shared/incident-authority.ts');
+    for (const field of ['category', 'ai_summary', 'ai_confidence', 'ai_risk_flags', 'ai_analysis_version', 'ai_last_analyzed_at']) {
+      expect(authority, field).toContain(`${field}: record.${field}`);
+    }
+  });
 });
 
 describe('Phase 07 cache and fingerprint behaviour', () => {
