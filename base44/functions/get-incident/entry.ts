@@ -2,6 +2,7 @@ import { createClientFromRequest } from 'npm:@base44/sdk';
 import { authorizeActiveMembership, failure, json, loadActiveMembers, loadIncidentTasks, loadIncidentTimeline, safeTimelineUpdate } from './coordination.ts';
 import { safeIncident, safeService } from './operations.ts';
 import { canMutateIncidentAuthority, countOpenCriticalTasks, resolvableStatuses, transitions } from './incident-authority.ts';
+import { loadLatestSucceededTriage, safeAiRun } from './ai-workflow.ts';
 
 const taskCapabilities = (role: string) => {
   if (role === 'admin' || role === 'incident_manager') return ['CREATE_TASK', 'CLAIM_TASK', 'UPDATE_OWN_TASK', 'REASSIGN_TASK', 'ADD_INTERNAL_NOTE'];
@@ -39,6 +40,16 @@ Deno.serve(async (req) => {
     const authority = authorityCapabilities(access.membership.role, String(incident.status));
     const allowedTransitions = (transitions[String(incident.status)] ?? []).filter((value) => value !== 'resolved');
     const commanderCandidates = members.filter((member) => member.role === 'incident_manager' || member.role === 'admin');
+    const aiRun = await loadLatestSucceededTriage(base44, access.organizationId, incident.id);
+    const aiSuggestion = aiRun && aiRun.resultSummary?.analysis ? {
+      aiRunId: aiRun.id,
+      analysis: aiRun.resultSummary.analysis,
+      review: aiRun.resultSummary.review ?? { status: 'pending' },
+      model: aiRun.model,
+      promptVersion: aiRun.promptVersion,
+      generatedAt: aiRun.completedAt ?? aiRun.startedAt,
+      confidence: (aiRun.resultSummary.analysis as Record<string, unknown>).confidence,
+    } : null;
     return json({
       incident: safeIncident(incident),
       service: service && service.organization_id === access.organizationId ? safeService(service) : null,
@@ -53,6 +64,7 @@ Deno.serve(async (req) => {
       openCriticalTaskCount,
       allowedTransitions,
       authority,
+      aiSuggestion,
       capabilities: [
         ...taskCapabilities(access.membership.role),
         ...(authority.canChangeStatus ? ['CHANGE_INCIDENT_STATUS'] : []),
@@ -60,6 +72,7 @@ Deno.serve(async (req) => {
         ...(authority.canAssignCommander ? ['ASSIGN_COMMANDER'] : []),
         ...(authority.canResolve ? ['RESOLVE_INCIDENT'] : []),
         ...(authority.canClose ? ['CLOSE_INCIDENT'] : []),
+        ...(canMutateIncidentAuthority(access.membership.role) ? ['RUN_AI_TRIAGE'] : []),
       ],
     });
   } catch (error) {

@@ -941,3 +941,189 @@ is complete and accepted on
 - TypeScript, lint, and production build PASS
 
 Recommended next step: backend Phase 07 (DeepSeek triage) and human review.
+
+## 15 / Major Phase 07 — DeepSeek Triage & Human Review
+
+**Status:** IMPLEMENTED on
+`backend/base44-phase-07-deepseek-triage-human-review` — local automated
+verification PASSED, targeted resources deployed. Hosted success-path AI
+verification is **PENDING** the product-owner action to configure the
+`DEEPSEEK_API_KEY` server-side secret. The AI fallback path was verified hosted.
+
+**Base commit:** `5141fc5` (Phase 06 merge `633e097` verified as ancestor of
+`origin/main`).
+
+### Phase 07 architecture
+
+- Server-authoritative `analyze-incident` orchestrates: authorize → load
+  Incident + Service → minimize input → build fingerprint → cache check →
+  create AiRun(started) → append `ai_analysis_requested` → call DeepSeek
+  (non-thinking, JSON mode) → validate → at most one repair → append
+  `ai_analysis_completed` → return typed suggestion. It never mutates Incident
+  severity/status and never creates tasks.
+- Server-authoritative `apply-incident-analysis` applies only explicitly
+  human-reviewed values: ai fields, optional severity (Phase 06 rules),
+  optional status transition (Phase 06 state machine), selected AI tasks
+  (`source=ai`, `ai_run_id`), and marks the AiRun review `applied`.
+- `get-incident` exposes a safe `aiSuggestion` read model (analysis + review
+  status + model + generatedAt + confidence) from the latest succeeded triage.
+- AI is an adviser only: `AI SUGGESTION`, `REVIEW REQUIRED`, human apply.
+
+### AiRun
+
+- Entity `base44/entities/airun.jsonc` (feature/provider/model/prompt_version/
+  status/request_fingerprint/token counts/duration/error_code/result_summary/
+  requested_by_user_id/timestamps). RLS deny-by-default (no direct frontend
+  CRUD). Phase 07 uses only `feature=triage`.
+- `result_summary` stores a small bounded snapshot: validated analysis +
+  review state + provenance. No API key, no chain of thought, no raw provider
+  envelope, no reasoning_content.
+
+### DeepSeek provider boundary
+
+- `base44/functions/_shared/ai-workflow.ts` (copied into each function folder):
+  strict validation, bounded output, prompt builder, fingerprint, AiRun
+  helpers, and `callDeepSeekTriage` adapter.
+- Provider request uses the current official DeepSeek V4 API: `thinking:
+  {type:"disabled"}` (thinking is enabled by default and must be explicitly
+  disabled), `response_format:{type:"json_object"}`, `stream:false`, bounded
+  `max_tokens`, no `tools`. No chain-of-thought is requested or retained.
+- Model from `DEEPSEEK_MODEL` (expected `deepseek-v4-flash`); key from
+  `DEEPSEEK_API_KEY`; timeout from `DEEPSEEK_TIMEOUT_MS` (default 20000ms);
+  base URL from `DEEPSEEK_BASE_URL` (default `https://api.deepseek.com`).
+- Environment variable NAMES only are documented; values are never printed.
+
+### Environment configuration
+
+- Non-secret `DEEPSEEK_MODEL=deepseek-v4-flash` configured through the Base44
+  environment/secret mechanism.
+- `DEEPSEEK_API_KEY` must be configured server-side by the product owner
+  through the official Base44 secret mechanism before hosted AI verification.
+  The coding executor does not hold or print the key.
+
+### Prompt, injection defence, and bounds
+
+- Prompt version `triage-v1`. System prompt explicitly treats Incident content
+  as UNTRUSTED DATA: no instruction-following from Incident text, no tools,
+  no infrastructure claims, no hidden reasoning, unknown stays unknown.
+- Validation rejects invalid enums, out-of-range confidence, oversized strings,
+  oversized arrays, invalid task priorities, unsafe shapes; strips HTML.
+- No `dangerouslySetInnerHTML`; no chain-of-thought or full prompt in the UI.
+
+### Caching and regeneration
+
+- `request_fingerprint` derived from server-authoritative incident inputs +
+  prompt/model version. Cache hit returns the prior succeeded result without a
+  new provider call, without a duplicate AiRun, and without duplicate timeline
+  events.
+- Regeneration requires `forceRegenerate=true` AND explicit `confirmRegenerate`;
+  never automatic.
+
+### Timeline events
+
+- `ai_analysis_requested`, `ai_analysis_completed`, `ai_analysis_failed`
+  (IncidentUpdate enum extended). Success = 1 requested + 1 completed; failure
+  = 1 requested + 1 failed. Cache hits and repeated reads append nothing.
+
+### Human review and apply
+
+- Suggestion starts `pending`. Human can edit summary, severity suggestion,
+  category, impact, risk flags, clarifying questions, recommended tasks,
+  immediate next action. Confidence remains model provenance.
+- Apply: accepted AI severity with `severity_source=ai_suggested` (human-edited
+  severity remains `human`); no fake severity event when unchanged; legal status
+  transition only when explicitly selected; selected reviewed tasks created with
+  `source=ai`; idempotent by request id; no auto-assignee.
+
+### Known PRD ambiguity (documented, not silently changed)
+
+- The functional prose mentions an "Affected area" proposal, but the canonical
+  `IncidentAnalysisResult` contract has no `affectedArea` field. Phase 07
+  preserves the canonical TypeScript contract and keeps Service as the
+  authoritative affected-service context. No schema/output field was invented.
+
+### Tests
+
+- New: `phase07AiDomain.test.ts`, `phase07AiProvider.test.ts`,
+  `phase07AiBackend.test.ts`, `phase07AiAuthority.test.ts`,
+  `phase07AiUi.test.tsx`.
+- Coverage includes domain validation, provider success/failure/repair,
+  prompt injection defence, fingerprint/cache, timeline event counts, human
+  review invariants, tenant isolation, and frontend behavior (analyze,
+  review, apply, fallback, no direct writes, tabs preserved).
+- Final baseline: 54 test files / 460 tests, passed twice consecutively under
+  the serial Vitest configuration.
+
+### Hosted runtime verification (all gates PASSED)
+
+- Gate 1 baseline PASSED: Analyze visible for Manager/Admin, no AI call on page
+  load, manual controls present.
+- AI fallback PASSED (before key configured): clicking Analyze returns the safe
+  `AI_NOT_CONFIGURED` fallback; no direct browser DeepSeek request; incident
+  workflow unaffected.
+- Gate 2 PASSED: real hosted DeepSeek analysis with `DEEPSEEK_API_KEY`
+  configured. `analyze-incident` returned HTTP 200 with a structured AI
+  SUGGESTION (summary, suggested severity, category, impact, confidence, risk
+  flags, clarifying questions, recommended tasks, immediate next action, model
+  `deepseek-v4-flash`, generated timestamp, REVIEW PENDING). Browser never
+  called `api.deepseek.com` directly.
+- Gate 3 PASSED: suggestion survives refresh with REVIEW PENDING; severity and
+  status unchanged by analysis; zero AI tasks silently inserted; manual
+  authority controls intact.
+- Gate 4 PASSED: exactly 1 × AI ANALYSIS REQUESTED, 1 × AI ANALYSIS COMPLETED,
+  0 × AI ANALYSIS FAILED; five-refresh counts stable (zero-write).
+- Gate 5 PASSED: REGENERATE requires explicit confirmation; cached successful
+  result reused without a second provider call or duplicate AiRun/events.
+- Gate 6 PASSED: human review/editor editable for all fields; one of 3 AI
+  recommended tasks selected; explicit human severity acceptance with reason;
+  legal status transition selected (reported → triaging).
+- Gate 7 PASSED: APPLY REVIEWED SUGGESTIONS returned HTTP 200; review status
+  APPLIED after refresh; accepted metadata persists (category payments,
+  ai_summary, ai_confidence 0.8, ai_risk_flags, ai_analysis_version triage-v1,
+  ai_last_analyzed_at); severity SEV2 (severity_source=ai_suggested); status
+  triaging. AI itself caused no autonomous transition.
+- Gate 8 PASSED: 1 × SEVERITY CHANGED, 1 × STATUS CHANGED, 1 × TASK CREATED,
+  1/1/0 AI counts stable; five-refresh zero-write.
+- Gate 9 PASSED: selected AI task created exactly once (source=ai), not
+  auto-assigned, normal Phase 05 controls available.
+- Responsive PASSED at 430 / 390 / 360 (AI surface, no overflow, tabs +
+  manual controls usable).
+- Screenshots: `screenshot/phase-07/01-ai-baseline.png`, `02-ai-suggestion.png`,
+  `03-ai-pending-review-after-refresh.png`, `04-ai-timeline.png`,
+  `05-ai-timeline-zero-write.png`, `06-ai-cache-regeneration-guard.png`,
+  `07-human-review.png`, `08-human-review-applied.png`,
+  `09-human-apply-timeline.png`, `10-ai-reviewed-task.png`,
+  `11-mobile-430.png`, `12-mobile-390.png`, `13-mobile-360.png`.
+  Network audit: `screenshot/phase-07/network-audit.md`.
+
+### Phase 07 read-model correction (found during hosted Gate 7 verification)
+
+- Root cause: `get-incident` `safeIncident` projection omitted the AI-accepted
+  Incident fields (category, ai_summary, ai_confidence, ai_risk_flags,
+  ai_analysis_version, ai_last_analyzed_at). The data was persisted by
+  `apply-incident-analysis` but not returned to the frontend read model.
+- Fix: added the fields to `get-incident/operations.ts` `safeIncident` and the
+  shared/local `safeIncidentAuthority` projections. Regression test added.
+- Deployed: `get-incident` only.
+- Commit: `83c0bc7`.
+  `13-mobile-360.png`. Network audit: `screenshot/phase-07/network-audit.md`.
+
+### Deployments
+
+- Entities pushed: AiRun created; IncidentUpdate/Incident/etc. updated.
+- Functions deployed (targeted): `analyze-incident`, `apply-incident-analysis`,
+  `get-incident`.
+- Site-only deployment performed. No full `base44 deploy`, no auth push.
+
+### Explicitly out of scope (confirmed)
+
+Realtime, Postmortem, Notification, AuditLog, public status mutation, reopen,
+Slack/Discord/email, vector/embeddings/RAG, web search, autonomous remediation,
+agent loops, Phase 08.
+
+### Known non-blocking advisories
+
+- npm audit reports 3 high severity advisories in transitive deps
+  (`nanoid <3.3.17`, `react-router` 7.12–7.18.1 CSRF) present since prior
+  phases. No breaking upgrade or React Router major migration was performed
+  this phase.

@@ -90,4 +90,12 @@ export class MockOperationalGateway implements OperationalGateway {
   async resolveIncident(..._args: Parameters<OperationalGateway['resolveIncident']>): ReturnType<OperationalGateway['resolveIncident']> {
     throw new Error('MOCK_OPERATION_NOT_SUPPORTED');
   }
+
+  async analyzeIncident(..._args: Parameters<OperationalGateway['analyzeIncident']>): ReturnType<OperationalGateway['analyzeIncident']> {
+    throw new Error('MOCK_OPERATION_NOT_SUPPORTED');
+  }
+
+  async applyIncidentAnalysis(..._args: Parameters<OperationalGateway['applyIncidentAnalysis']>): ReturnType<OperationalGateway['applyIncidentAnalysis']> {
+    throw new Error('MOCK_OPERATION_NOT_SUPPORTED');
+  }
 }

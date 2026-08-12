@@ -23,6 +23,9 @@ export const INCIDENT_UPDATE_EVENTS = [
   'task_completed',
   'task_cancelled',
   'internal_note_added',
+  'ai_analysis_requested',
+  'ai_analysis_completed',
+  'ai_analysis_failed',
 ] as const;
 
 export type IncidentSeverity = typeof INCIDENT_SEVERITIES[number];
@@ -42,7 +45,9 @@ export type Incident = {
   severity: IncidentSeverity;
   severitySource: 'human' | 'ai_suggested' | 'rule_baseline';
   status: IncidentStatus;
+  category?: string;
   impactSummary?: string;
+  affectedUsersEstimate?: number;
   observedStartAt?: string;
   reportedAt: string;
   acknowledgedAt?: string;
@@ -53,6 +58,11 @@ export type Incident = {
   recoveryVerified: boolean;
   remainingRisk?: string;
   resolutionOverrideReason?: string;
+  aiSummary?: string;
+  aiConfidence?: number;
+  aiRiskFlags?: string[];
+  aiAnalysisVersion?: string;
+  aiLastAnalyzedAt?: string;
   publicVisibility: 'private' | 'public';
   isDemo: boolean;
   reopenedCount: number;

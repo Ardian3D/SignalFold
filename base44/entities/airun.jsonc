@@ -1,0 +1,69 @@
+{
+  "name": "AiRun",
+  "type": "object",
+  "properties": {
+    "organization_id": { "type": "string" },
+    "incident_id": { "type": "string" },
+    "feature": { "type": "string", "enum": ["triage", "status_draft", "postmortem"] },
+    "provider": { "type": "string", "enum": ["deepseek"] },
+    "model": { "type": "string", "minLength": 1, "maxLength": 120 },
+    "prompt_version": { "type": "string", "minLength": 1, "maxLength": 40 },
+    "status": { "type": "string", "enum": ["started", "succeeded", "failed", "invalid_response"] },
+    "request_fingerprint": { "type": "string", "minLength": 8, "maxLength": 128 },
+    "input_token_count": { "type": "integer", "minimum": 0 },
+    "output_token_count": { "type": "integer", "minimum": 0 },
+    "duration_ms": { "type": "integer", "minimum": 0 },
+    "error_code": { "type": "string", "maxLength": 80 },
+    "result_summary": {
+      "type": "object",
+      "properties": {
+        "analysis": {
+          "type": "object",
+          "properties": {
+            "summary": { "type": "string", "maxLength": 2000 },
+            "severitySuggestion": { "type": "string", "enum": ["SEV1", "SEV2", "SEV3", "SEV4"] },
+            "category": { "type": "string", "maxLength": 80 },
+            "impact": { "type": "string", "maxLength": 1000 },
+            "confidence": { "type": "number", "minimum": 0, "maximum": 1 },
+            "riskFlags": { "type": "array", "maxItems": 12, "items": { "type": "string", "maxLength": 80 } },
+            "clarifyingQuestions": { "type": "array", "maxItems": 10, "items": { "type": "string", "maxLength": 500 } },
+            "recommendedTasks": {
+              "type": "array",
+              "maxItems": 12,
+              "items": {
+                "type": "object",
+                "properties": {
+                  "title": { "type": "string", "minLength": 3, "maxLength": 160 },
+                  "description": { "type": "string", "maxLength": 2000 },
+                  "priority": { "type": "string", "enum": ["critical", "high", "medium", "low"] }
+                },
+                "required": ["title", "priority"]
+              }
+            },
+            "immediateNextAction": { "type": "string", "maxLength": 1000 }
+          },
+          "required": ["summary", "severitySuggestion", "category", "impact", "confidence", "riskFlags", "clarifyingQuestions", "recommendedTasks", "immediateNextAction"]
+        },
+        "review": {
+          "type": "object",
+          "properties": {
+            "status": { "type": "string", "enum": ["pending", "applied"] },
+            "reviewedAt": { "type": "string", "format": "date-time" },
+            "wasEdited": { "type": "boolean" },
+            "appliedTaskCount": { "type": "integer", "minimum": 0 },
+            "severityChanged": { "type": "boolean" },
+            "statusChanged": { "type": "boolean" }
+          }
+        }
+      },
+      "required": ["analysis", "review"]
+    },
+    "requested_by_user_id": { "type": "string" },
+    "started_at": { "type": "string", "format": "date-time" },
+    "completed_at": { "type": "string", "format": "date-time" },
+    "request_id": { "type": "string", "maxLength": 128 },
+    "is_demo": { "type": "boolean", "default": false }
+  },
+  "required": ["organization_id", "feature", "provider", "model", "prompt_version", "status", "request_fingerprint", "requested_by_user_id", "started_at", "is_demo"],
+  "rls": { "create": false, "read": false, "update": false, "delete": false }
+}
