@@ -13,7 +13,7 @@
 | Product | SignalFold |
 | Tagline | **Turn signals into action.** |
 | Document | `PRD_SignalFold.md` |
-| Version | 1.0 |
+| Version | 1.1 |
 | Status | Approved foundation / implementation-ready |
 | Date | 22 July 2026 |
 | Product type | AI-assisted incident command center |
@@ -44,6 +44,7 @@ Setiap perubahan yang memengaruhi fitur, schema, permission, user flow, atau API
 | Version | Date | Change | Author |
 |---|---|---|---|
 | 1.0 | 22 Jul 2026 | Initial canonical PRD | Product team |
+| 1.1 | 12 Aug 2026 | Owner-approved degraded realtime fallback: Base44 entity subscriptions remain primary. While an authenticated active Incident Room is online and visible, SignalFold performs a bounded 10-second authoritative reconciliation safety net because hosted Base44 realtime delivery for backend-function entity mutations was not observed in the current environment. The fallback performs reads only, stops when hidden/offline/unmounted, and never replaces server authority. | Product owner |
 
 ---
 
@@ -1726,13 +1727,31 @@ Subscribe only to data relevant to the active organization/incident:
 
 ## 18.2 Expected UX
 
-- New update appears within approximately 1–2 seconds under normal conditions.
+- New update appears within approximately 1–2 seconds under normal conditions
+  when Base44 realtime delivery is working.
 - No full page refresh.
 - Preserve scroll position.
 - Visually mark new events without distracting flashing.
 - If disconnected, display “Realtime disconnected — retrying.”
 - Re-fetch authoritative snapshot after reconnect.
 - Clean up subscriptions on route change/unmount.
+
+## 18.2.1 Degraded realtime fallback (owner-approved, PRD 1.1)
+
+- Base44 entity subscriptions are the primary realtime transport.
+- Approximately 1–2 second propagation target applies when realtime delivery works.
+- When hosted platform realtime delivery is unavailable for backend-function entity
+  mutations, a bounded degraded fallback is allowed: while an authenticated active
+  Incident Room is online and document-visible, SignalFold performs a bounded
+  10-second authoritative reconciliation safety net for that Incident Room only.
+- The fallback is read-only: it never mutates Incident, IncidentTask, or IncidentUpdate,
+  never calls AI, never performs a full page reload, and never grants direct browser
+  authority.
+- The fallback must not be treated as realtime: data discovered only through the
+  fallback is not marked LIVE, and the fallback must not imply a transport health status.
+- No 1-second or high-frequency polling; the 10-second interval is the bounded fallback.
+- The fallback stops when hidden, offline, unmounted, on route/incident/organization
+  change, and on logout or backend-mode switch.
 
 ## 18.3 Conflict Rules
 

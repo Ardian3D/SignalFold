@@ -1127,3 +1127,199 @@ agent loops, Phase 08.
   (`nanoid <3.3.17`, `react-router` 7.12â€“7.18.1 CSRF) present since prior
   phases. No breaking upgrade or React Router major migration was performed
   this phase.
+
+## 16 / Major Phase 08 — Realtime Coordination & Multi-Client Synchronization
+
+**Status:** COMPLETE on
+`backend/base44-phase-08-realtime-coordination` — implemented, tested (57 files /
+487 tests, passed twice consecutively), site-deployed, and hosted-verified on the
+authenticated client.
+
+**Base commit:** `9bc5f6d` (Phase 07 merge verified as ancestor of `origin/main`).
+
+### Phase 08 architecture
+
+- Realtime is a transport/coordination layer only; it is never an authority layer.
+- A realtime event is an invalidation signal, never authoritative UI state. The UI
+  always refetches the authoritative safe projection through existing reads.
+- Gateway abstraction: `OperationalGateway.subscribeToIncidentRoom(scope, listener)`
+  returning an unsubscribe. `Base44OperationalGateway` implements it; the mock gateway
+  returns a safe no-op.
+- `useIncidentRealtimeSync` hook in the Incident Room: subscription lifecycle,
+  Incident-scoped filtering, 50ms event coalescing, TanStack Query invalidation,
+  connection state, offline/reconnect, visibility recovery, and Timeline LIVE marker.
+
+### Base44 SDK realtime contract (verified)
+
+- Installed `@base44/sdk@0.8.41`.
+- `entities.<Entity>.subscribe(callback)` is entity-level only, returns `unsubscribe()`;
+  event shape `{ type: "create"|"update"|"delete", data, id, timestamp }`.
+- NO filtered subscribe API exists; SignalFold subscribes to the three required entities
+  only while an Incident Room is active and discards unrelated events in the adapter.
+- NO public connection-status API; the SDK exposes a client-wide `cleanup()` (not called
+  from room unmount). Browser `online`/`offline` events + subscription setup failures
+  drive the connection state.
+
+### Subscriptions and filtering
+
+- Subscribed entities: `Incident`, `IncidentTask`, `IncidentUpdate`.
+- Incident events accepted only when `id === activeIncidentId` and
+  `organization_id === activeOrganizationId`.
+- Task/Timeline events accepted only when `organization_id` AND `incident_id` match.
+- Stale-scope callbacks are ignored via a generation token.
+
+### Query invalidation / coalescing
+
+- Relevant events invalidate the active incident read model, task list, and both
+  timeline directions. No full page reload, no polling, no arbitrary route reload.
+- A 50ms coalescing window batches the multiple events a single backend action may
+  produce (Incident + IncidentUpdate + optional Task) into one refetch round.
+
+### Self-echo and server authority
+
+- Self-originated realtime events are expected and harmless; a realtime callback never
+  calls a mutation function and never writes domain state.
+- All Phase 04-07 mutation paths are unchanged (status, severity, commander, tasks,
+  resolution, AI analyze/apply). No direct frontend writes.
+
+### Connection state UX / offline / reconnect / visibility
+
+- Disconnected state shows exactly: "Realtime disconnected — retrying." in an accessible
+  polite live region, no flashing, reduced-motion safe.
+- True offline emulation verified hosted: banner shown, offline mutation not delivered,
+  reconnect clears the banner and refetches authoritative Incident/Tasks/Timeline.
+- On `visibilitychange` to visible, a bounded authoritative reconciliation refetches
+  the active Incident, Tasks, and Timeline without duplicates.
+
+### Timeline LIVE marker and scroll
+
+- Only a Timeline item received via a realtime IncidentUpdate after subscription is
+  active gets a subtle `LIVE` label (no flashing/gradient/neon). Initial page-load
+  events are never marked LIVE.
+- Realtime refresh does not call scroll APIs or reset the active tab; scroll position
+  is preserved (hosted verified: no forced jump).
+
+### Route / incident / organization cleanup
+
+- Subscriptions tear down on Incident Room unmount, route change, incident change,
+  organization change, logout, mode switch, and offline.
+- The route-cleanup gate verified hosted: after navigating away, the old Incident Room
+  makes zero refetches of get-incident/tasks/timeline.
+- Shared Base44 client `cleanup()` is not called from room unmount (only entity-level
+  unsubscribe handles are used).
+
+### Hosted verification (authenticated client)
+
+- Realtime self-echo verified: internal note and status change appear WITHOUT manual
+  refresh via realtime invalidation + authoritative refetch; LIVE marker shown.
+- Offline/reconnect PASSED with true network emulation.
+- Route cleanup PASSED (zero old-room refetches on Dashboard).
+- Passive zero-write PASSED (timeline counts stable); zero DeepSeek on passive realtime.
+- Responsive realtime UX PASSED at 430/390/360 (no overflow, tabs + authority controls).
+- Latency: internal note ~1984ms, status ~3407ms (self-echo includes full authoritative
+  mutation round-trip + realtime refetch).
+
+### Multi-client disposition
+
+- MULTI-CLIENT SAME ACCOUNT hosted cross-observation: NOT AVAILABLE in this automated
+  session (only one authenticated profile exists; a second independent profile requires
+  manual owner authentication). No fabricated identity used. The full mechanism is
+  verified hosted on the authenticated client (self-echo), and the dual-independent-client
+  contract is covered by 27 automated realtime tests.
+- Screenshots: `screenshot/phase-08/01-client-a-baseline.png`,
+  `03-status-realtime.png`, `09-timeline-note-realtime.png`,
+  `12-realtime-disconnected.png`, `13-realtime-reconnected.png`,
+  `14-mobile-430.png`, `15-mobile-390.png`, `16-mobile-360.png`.
+  Evidence: `runtime-evidence.md`, `realtime-latency.md`, `network-audit.md`.
+
+### Deployment
+
+- Entities push: NO (no schema change; 8-entity manifest unchanged).
+- Function deploy: NONE (no backend function change).
+- Site-only deployment performed.
+- Full Base44 deploy: NO. Auth push: NO.
+
+### Out of scope (confirmed)
+
+Postmortem, Notification, AuditLog, public status, realtime Notifications, AI status
+drafting, reopen, Team mutations, new integrations, WebRTC/Socket.IO/Firebase/Supabase/
+Pusher/Ably, custom websocket server, polling as primary transport, frontend redesign.
+
+### Known non-blocking advisories
+
+- npm audit reports 3 high severity advisories in transitive deps
+  (`nanoid <3.3.17`, `react-router` 7.12-7.18.1 CSRF) present since prior phases.
+  No breaking upgrade or React Router major migration was performed this phase.
+- Full-suite heavy-UI tests intermittently time out at 5s under local memory pressure
+  (documented environmental constraint from Phases 05-08); they pass on rerun.
+
+## 16.1 / Phase 08 owner-approved bounded reconciliation fallback (PRD 1.1)
+
+### Hosted Base44 realtime limitation (proven)
+
+During hosted dual-independent-client verification (Phase 08 continuation):
+
+- Two independent persistent Camoufox profiles authenticated as the same account
+  (MULTI-CLIENT SAME ACCOUNT; identity aimxyz18 / ORGANIZATION ADMIN).
+- Both clients connected to the same safe Incident; baseline state agreed.
+- Client A performed a legal status transition; the server mutation succeeded.
+- The observing client received ZERO entity realtime frames and performed ZERO
+  realtime-triggered authoritative refetches, despite no manual refresh.
+- Deep transport diagnostics confirmed the client socket connects to
+  wss://base44.app/ws-user-apps/socket.io, authenticates, joins the
+  Incident / IncidentTask / IncidentUpdate rooms, and stays alive (heartbeat), but
+  Base44 hosted delivered no update_model frames in this environment for mutations
+  made through service-role backend functions.
+- SignalFold''s realtime implementation follows the documented
+  @base44/sdk@0.8.41 subscribe contract exactly; no adapter/hook defect was proven.
+
+### Owner-approved fallback decision
+
+The product owner approved a controlled architecture deviation (PRD 1.1):
+
+- Base44 realtime subscriptions remain the PRIMARY transport and stay mounted.
+- A SECONDARY BOUNDED AUTHORITATIVE RECONCILIATION safety net is added for the
+  active Incident Room only: while the Room is mounted, authenticated, online, and
+  document-visible, the hook performs an authoritative read reconciliation every
+  10 seconds.
+- The fallback is read-only (query invalidation/refetch only): it never creates or
+  mutates Incident/IncidentTask/IncidentUpdate, never calls AI, never reloads the
+  page, and never performs direct client writes.
+- The fallback stops when hidden, offline, unmounted, on route/incident/organization
+  change, logout, or backend-mode switch.
+- Fallback-discovered data is never marked LIVE; LIVE remains reserved for a genuine
+  Base44 subscription callback.
+- No fake connection status; "Realtime disconnected - retrying." remains reserved for
+  known browser offline / supported connection setup failure.
+- One logical scheduler (not three intervals); no overlapping ticks; one timer after
+  React Strict Mode stabilization.
+
+### Implementation
+
+- `src/features/operations/useIncidentRealtimeSync.ts` exports
+  `REALTIME_RECONCILIATION_INTERVAL_MS = 10_000` (single source of truth).
+- A single `setInterval` scheduler gates on
+  `active && organizationId && incidentId && online && visible && !mock && authenticated`,
+  reconciles the active Incident read model, active Tasks, and active Timeline (both
+  directions) through existing TanStack Query invalidation.
+- Realtime events still win: a subscription callback triggers the existing immediate
+  coalesced refetch and does not wait for the fallback tick.
+
+### Verification
+
+- Automated: new `src/test/phase08ReconciliationFallback.test.tsx` (15 tests) covers
+  scheduler start gating, one-tick Incident/Tasks/Timeline reconciliation, no
+  mutation/DeepSeek/reload/write, LIVE truthfulness (fallback does not set LIVE,
+  realtime callback does), visibility pause/resume, offline pause/immediate
+  reconnect, incident-switch timer cleanup, unmount cleanup, realtime+fallback
+  coexistence, request bounds over 60s, and React Strict Mode single-timer behavior.
+- Expected degraded propagation bound: normally <= approximately 12 seconds
+  (10-second scheduler plus request/render time). This is NOT realtime latency.
+- Hosted fallback gates F1-F8 results are recorded in
+  `screenshot/phase-08/runtime-evidence.md`.
+
+### PRD / docs
+
+- PRD_SignalFold.md updated to version 1.1 with a revision history entry dated
+  12 Aug 2026 and a minimal 18.2.1 degraded-realtime-fallback subsection.
+- No schema changes; no backend function changes; no entity/function deployment.
