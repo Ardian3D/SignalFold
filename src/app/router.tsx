@@ -15,6 +15,7 @@ import { CreateIncidentPage } from '@/pages/CreateIncidentPage';
 import { IncidentRoomPage } from '@/pages/IncidentRoomPage';
 import { ResolvedIncidentPage } from '@/pages/ResolvedIncidentPage';
 import { PostmortemFoundationPage } from '@/pages/PostmortemFoundationPage';
+import { PostmortemPage } from '@/pages/PostmortemPage';
 import { ServicesPage } from '@/pages/ServicesPage';
 import { TeamPage } from '@/pages/TeamPage';
 import { SettingsPage } from '@/pages/SettingsPage';
@@ -115,6 +116,16 @@ export const router = createBrowserRouter([
       <RootLayout>
         <AppShell>
           <IncidentRoomPage />
+        </AppShell>
+      </RootLayout>
+    ),
+  },
+  {
+    path: '/app/incidents/:incidentId/postmortem',
+    element: (
+      <RootLayout>
+        <AppShell>
+          <PostmortemPage />
         </AppShell>
       </RootLayout>
     ),

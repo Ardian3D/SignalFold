@@ -4,7 +4,7 @@
   "properties": {
     "organization_id": { "type": "string" },
     "incident_id": { "type": "string" },
-    "event_type": { "type": "string", "enum": ["incident_created", "incident_seeded", "incident_acknowledged", "status_changed", "severity_changed", "commander_assigned", "commander_reassigned", "commander_unassigned", "internal_note_added", "public_update_published", "incident_resolved", "incident_closed", "incident_reopened", "task_created", "task_assigned", "task_reassigned", "task_claimed", "task_unclaimed", "task_updated", "task_blocked", "task_unblocked", "task_completed", "task_cancelled", "ai_analysis_requested", "ai_analysis_completed", "ai_analysis_failed"] },
+    "event_type": { "type": "string", "enum": ["incident_created", "incident_seeded", "incident_acknowledged", "status_changed", "severity_changed", "commander_assigned", "commander_reassigned", "commander_unassigned", "internal_note_added", "public_update_published", "incident_resolved", "incident_closed", "incident_reopened", "task_created", "task_assigned", "task_reassigned", "task_claimed", "task_unclaimed", "task_updated", "task_blocked", "task_unblocked", "task_completed", "task_cancelled", "ai_analysis_requested", "ai_analysis_completed", "ai_analysis_failed", "postmortem_generated", "postmortem_approved"] },
     "actor_user_id": { "type": "string" },
     "actor_type": { "type": "string", "enum": ["user", "system", "ai"] },
     "visibility": { "type": "string", "enum": ["internal", "public"] },
