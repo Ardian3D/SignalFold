@@ -54,9 +54,18 @@
             "severityChanged": { "type": "boolean" },
             "statusChanged": { "type": "boolean" }
           }
+        },
+        "postmortem": {
+          "type": "object",
+          "properties": {
+            "status": { "type": "string", "enum": ["draft", "in_review", "approved", "published"] },
+            "version": { "type": "integer", "minimum": 1 },
+            "repaired": { "type": "boolean" },
+            "executiveSummary": { "type": "string", "maxLength": 4000 },
+            "rootCause": { "type": "string", "maxLength": 4000 }
+          }
         }
-      },
-      "required": ["analysis", "review"]
+      }
     },
     "requested_by_user_id": { "type": "string" },
     "started_at": { "type": "string", "format": "date-time" },

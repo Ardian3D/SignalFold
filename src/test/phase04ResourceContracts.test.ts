@@ -8,9 +8,9 @@ import { TASK_PRIORITIES, TASK_SOURCES, TASK_STATUSES } from '@/features/tasks/d
 const root = resolve(process.cwd());
 const schema = (name: string) => JSON.parse(readFileSync(resolve(root, 'base44/entities', name), 'utf8').replace(/\/\/.*$/gm, '')) as Record<string, any>;
 describe('Phase 05 operational resource contracts', () => {
-  it('preserves the full synchronized entity manifest and excludes later-phase resources', () => {
-    expect(readdirSync(resolve(root, 'base44/entities')).sort()).toEqual(['User.jsonc', 'airun.jsonc', 'incident-task.jsonc', 'incident-update.jsonc', 'incident.jsonc', 'membership.jsonc', 'organization.jsonc', 'service.jsonc'].sort());
-    expect(readdirSync(resolve(root, 'base44/entities')).some(file => /postmortem|notification|audit/i.test(file))).toBe(false);
+  it('preserves the full synchronized entity manifest and excludes out-of-scope resources', () => {
+    expect(readdirSync(resolve(root, 'base44/entities')).sort()).toEqual(['User.jsonc', 'airun.jsonc', 'incident-task.jsonc', 'incident-update.jsonc', 'incident.jsonc', 'membership.jsonc', 'organization.jsonc', 'postmortem.jsonc', 'service.jsonc'].sort());
+    expect(readdirSync(resolve(root, 'base44/entities')).some(file => /notification|audit/i.test(file))).toBe(false);
   });
   it('uses canonical service and incident enums', () => {
     expect(SERVICE_CRITICALITIES).toEqual(['low', 'medium', 'high', 'critical']);

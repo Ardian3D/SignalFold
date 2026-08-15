@@ -1,0 +1,54 @@
+{
+  "name": "Postmortem",
+  "type": "object",
+  "properties": {
+    "organization_id": { "type": "string" },
+    "incident_id": { "type": "string" },
+    "status": { "type": "string", "enum": ["draft", "in_review", "approved", "published"] },
+    "executive_summary": { "type": "string", "minLength": 1, "maxLength": 4000 },
+    "impact": { "type": "string", "minLength": 1, "maxLength": 4000 },
+    "detection": { "type": "string", "maxLength": 2000 },
+    "timeline_summary": {
+      "type": "array",
+      "maxItems": 60,
+      "items": {
+        "type": "object",
+        "properties": {
+          "at": { "type": "string", "minLength": 1, "maxLength": 40 },
+          "event": { "type": "string", "minLength": 1, "maxLength": 400 }
+        },
+        "required": ["at", "event"]
+      }
+    },
+    "root_cause": { "type": "string", "minLength": 1, "maxLength": 4000 },
+    "contributing_factors": { "type": "array", "maxItems": 24, "items": { "type": "string", "minLength": 1, "maxLength": 500 } },
+    "resolution": { "type": "string", "minLength": 1, "maxLength": 4000 },
+    "went_well": { "type": "array", "maxItems": 24, "items": { "type": "string", "minLength": 1, "maxLength": 500 } },
+    "went_poorly": { "type": "array", "maxItems": 24, "items": { "type": "string", "minLength": 1, "maxLength": 500 } },
+    "preventive_actions": {
+      "type": "array",
+      "maxItems": 16,
+      "items": {
+        "type": "object",
+        "properties": {
+          "title": { "type": "string", "minLength": 1, "maxLength": 160 },
+          "ownerRole": { "type": "string", "minLength": 1, "maxLength": 80 },
+          "priority": { "type": "string", "enum": ["high", "medium", "low"] },
+          "suggestedDueInDays": { "type": "integer", "minimum": 0, "maximum": 365 }
+        },
+        "required": ["title", "ownerRole", "priority", "suggestedDueInDays"]
+      }
+    },
+    "unknowns": { "type": "array", "maxItems": 24, "items": { "type": "string", "minLength": 1, "maxLength": 500 } },
+    "generated_by_ai": { "type": "boolean", "default": false },
+    "ai_run_id": { "type": "string", "maxLength": 128 },
+    "version": { "type": "integer", "minimum": 1 },
+    "approved_by_user_id": { "type": "string" },
+    "approved_at": { "type": "string", "format": "date-time" },
+    "published_at": { "type": "string", "format": "date-time" },
+    "is_demo": { "type": "boolean", "default": false },
+    "request_id": { "type": "string", "maxLength": 128 }
+  },
+  "required": ["organization_id", "incident_id", "status", "executive_summary", "impact", "timeline_summary", "root_cause", "resolution", "generated_by_ai", "version", "is_demo"],
+  "rls": { "create": false, "read": false, "update": false, "delete": false }
+}

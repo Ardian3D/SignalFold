@@ -26,6 +26,8 @@ export const INCIDENT_UPDATE_EVENTS = [
   'ai_analysis_requested',
   'ai_analysis_completed',
   'ai_analysis_failed',
+  'postmortem_generated',
+  'postmortem_approved',
 ] as const;
 
 export type IncidentSeverity = typeof INCIDENT_SEVERITIES[number];

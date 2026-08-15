@@ -99,6 +99,34 @@ export class MockOperationalGateway implements OperationalGateway {
     throw new Error('MOCK_OPERATION_NOT_SUPPORTED');
   }
 
+  async getPostmortem(..._args: Parameters<OperationalGateway['getPostmortem']>): ReturnType<OperationalGateway['getPostmortem']> {
+    return { postmortem: null };
+  }
+
+  async generatePostmortem(..._args: Parameters<OperationalGateway['generatePostmortem']>): ReturnType<OperationalGateway['generatePostmortem']> {
+    throw new Error('MOCK_OPERATION_NOT_SUPPORTED');
+  }
+
+  async savePostmortemDraft(..._args: Parameters<OperationalGateway['savePostmortemDraft']>): ReturnType<OperationalGateway['savePostmortemDraft']> {
+    throw new Error('MOCK_OPERATION_NOT_SUPPORTED');
+  }
+
+  async submitPostmortemForReview(..._args: Parameters<OperationalGateway['submitPostmortemForReview']>): ReturnType<OperationalGateway['submitPostmortemForReview']> {
+    throw new Error('MOCK_OPERATION_NOT_SUPPORTED');
+  }
+
+  async returnPostmortemToDraft(..._args: Parameters<OperationalGateway['returnPostmortemToDraft']>): ReturnType<OperationalGateway['returnPostmortemToDraft']> {
+    throw new Error('MOCK_OPERATION_NOT_SUPPORTED');
+  }
+
+  async approvePostmortem(..._args: Parameters<OperationalGateway['approvePostmortem']>): ReturnType<OperationalGateway['approvePostmortem']> {
+    throw new Error('MOCK_OPERATION_NOT_SUPPORTED');
+  }
+
+  async createPostmortemDraft(..._args: Parameters<OperationalGateway['createPostmortemDraft']>): ReturnType<OperationalGateway['createPostmortemDraft']> {
+    throw new Error('MOCK_OPERATION_NOT_SUPPORTED');
+  }
+
   subscribeToIncidentRoom(..._args: Parameters<OperationalGateway['subscribeToIncidentRoom']>): ReturnType<OperationalGateway['subscribeToIncidentRoom']> {
     return () => undefined;
   }

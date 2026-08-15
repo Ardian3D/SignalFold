@@ -1323,3 +1323,125 @@ The product owner approved a controlled architecture deviation (PRD 1.1):
 - PRD_SignalFold.md updated to version 1.1 with a revision history entry dated
   12 Aug 2026 and a minimal 18.2.1 degraded-realtime-fallback subsection.
 - No schema changes; no backend function changes; no entity/function deployment.
+
+## 17 / Phase 09 Postmortem & Human Approval (PRD 1.1)
+
+### Entity
+
+- New 9th entity `Postmortem` (`base44/entities/postmortem.jsonc`): tenant
+  `organization_id`, unique `incident_id` parent, `status` enum
+  `draft|in_review|approved|published`, all PRD document sections, structured
+  `timeline_summary` and `preventive_actions`, `generated_by_ai`, `ai_run_id`,
+  `version` (starts 1), server-managed `approved_by_user_id` / `approved_at` /
+  `published_at`. RLS denies all direct client writes.
+- Final entity manifest is exactly 9: User, Organization, Membership, Service,
+  Incident, IncidentUpdate, IncidentTask, AiRun, Postmortem. No Notification,
+  no AuditLog, no PostmortemVersion, no ReviewComment, no Publication, no
+  FollowUpTask.
+- `AiRun.result_summary` extended with a bounded `postmortem` provenance snapshot.
+- `IncidentUpdate.event_type` extended with `postmortem_generated` and
+  `postmortem_approved`; frontend `INCIDENT_UPDATE_EVENTS` updated to match.
+
+### State machine
+
+- `draft -> in_review -> approved`; `in_review -> draft` (return to draft) is the
+  explicit human correction path. `published` remains a valid canonical terminal
+  state but the public publishing workflow is OUT OF PHASE 09.
+- Server enforces transitions; invalid transitions return
+  `POSTMORTEM_INVALID_STATE_TRANSITION` (409).
+- Human authority is non-negotiable: AI creates drafts only, AI never approves.
+  Approval requires an active Incident Manager/Admin membership.
+
+### Authorization
+
+- Every Postmortem backend function validates authenticated user + active
+  Membership + same organization + Incident ownership + allowed role via
+  `canMutateIncidentAuthority` (incident_manager/admin). `Membership.role` is
+  authoritative; `User.role` is never used.
+- Reporter and Responder cannot generate, edit, submit, return-to-draft, or
+  approve. They may only read when they can view the Incident.
+
+### Generation flow (`generate-postmortem`)
+
+- Requires Incident status `resolved` or `closed`; other statuses return
+  `INCIDENT_NOT_ELIGIBLE`.
+- Loads authoritative Incident, Service, Tasks, and bounded chronological
+  Timeline server-side; never trusts frontend copies of source data.
+- Builds deterministic request fingerprint from source data + prompt version.
+- Creates a started `AiRun` (feature `postmortem`, provider `deepseek`,
+  `prompt_version` `postmortem-v1`), calls DeepSeek with `thinking: disabled`,
+  `response_format: json_object`, ~30s timeout, strict JSON output validation,
+  and at most one repair attempt.
+- On success: creates or versions the Postmortem as `draft`,
+  `generated_by_ai=true`, links `ai_run_id`, marks the AiRun succeeded, and
+  appends exactly one `postmortem_generated` Timeline event.
+- Never approves, submits, publishes, changes Incident status, or creates Tasks.
+- Failure handling: `AI_NOT_CONFIGURED`, `AI_TIMEOUT`, `AI_RATE_LIMITED`,
+  `AI_PROVIDER_UNAVAILABLE`, `AI_INVALID_RESPONSE`; Incident and any existing
+  Postmortem/human edits remain untouched; AiRun records a safe failure; no
+  success event; no provider body leakage.
+
+### Regeneration guard
+
+- Explicit `forceRegenerate + confirmRegenerate` only. Existing draft is returned
+  without a new provider call when not forced (fingerprint cache).
+- Regeneration increments `version`, preserves prior output via AiRun history,
+  and never overwrites an APPROVED Postmortem (`POSTMORTEM_APPROVED_IMMUTABLE`).
+- Frontend requires an explicit confirmation dialog and prevents regeneration
+  while unsaved local edits exist.
+
+### Human edit / review / approval
+
+- `save-postmortem-draft`: Manager/Admin, status `draft`, validates all editable
+  sections; no AI call, no new AiRun, no generation event.
+- `submit-postmortem-for-review`: Manager/Admin, `draft -> in_review`, requires
+  content complete; no AI.
+- `return-postmortem-to-draft`: Manager/Admin, `in_review -> draft`; no AI, no
+  version change.
+- `approve-postmortem`: Manager/Admin, `in_review -> approved`; sets
+  `approved_by_user_id` and `approved_at` server-side; concurrency-safe
+  `updateMany` expected-state pattern so exactly one logical approval succeeds
+  and exactly one `postmortem_approved` event is appended.
+- Approved Postmortem is immutable for normal editing: no save, no regenerate,
+  no resubmit, no return-to-draft. Copy/export stays allowed.
+
+### Manual fallback
+
+- `create-postmortem-draft`: Manager/Admin, `resolved`/`closed` Incident only,
+  creates an empty `draft` with `generated_by_ai=false` and `ai_run_id=null`;
+  no AI call and no AiRun. The product remains useful when DeepSeek is
+  unavailable.
+
+### Read model / frontend
+
+- `get-postmortem`: authoritative read returning editor fields, status, version,
+  AI provenance (model / prompt version / generated timestamp), approval display
+  metadata (human-readable approver when available), and role-derived
+  `canEdit`/`canApprove`. Never exposes raw provider payloads, fingerprints, API
+  keys, or hidden reasoning.
+- `get-incident` now exposes safe `postmortem` CTA metadata (status, version,
+  generatedByAi, approvedAt) so the Incident Room can render the correct action.
+- New route `/app/incidents/:incidentId/postmortem`; Incident Room CTA shows
+  GENERATE POSTMORTEM / VIEW POSTMORTEM / VIEW APPROVED POSTMORTEM based on
+  status and role. Editor states: NO POSTMORTEM, GENERATING, DRAFT, SAVING,
+  SAVED, IN REVIEW, APPROVING, APPROVED, AI ERROR, REGENERATION CONFIRMATION.
+- COPY POSTMORTEM uses the browser Clipboard API; copying never changes status.
+- The Postmortem is NOT added to the Phase 08 realtime subscription scope;
+  normal query refetch/onSuccess is sufficient. Phase 08 realtime subscriptions
+  and the 10-second bounded reconciliation remain exactly as approved in PRD 1.1.
+
+### Deployment
+
+- Target functions: `generate-postmortem`, `get-postmortem`,
+  `save-postmortem-draft`, `submit-postmortem-for-review`,
+  `return-postmortem-to-draft`, `approve-postmortem`,
+  `create-postmortem-draft`, plus `get-incident` (source changed to expose the
+  Postmortem CTA metadata). `base44 entities push` deployed the 9-entity
+  manifest. Site deployed via `npx base44 site deploy -y`. No full Base44
+  deploy, no auth push.
+
+### Hosted verification
+
+- Gate results recorded in `screenshot/phase-09/runtime-evidence.md`; network
+  evidence in `screenshot/phase-09/network-audit.md`; latency in
+  `screenshot/phase-09/realtime-latency.md`.

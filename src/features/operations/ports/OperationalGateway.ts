@@ -19,6 +19,17 @@ import type { IncidentTask, IncidentTaskFilters, TaskSummary } from '@/features/
 import type { IncidentTimeline } from '@/features/timeline/domain/timelineTypes';
 import type { SafeOrganizationMember } from '@/features/organization/domain/organizationTypes';
 import type { IncidentRealtimeEvent, IncidentRealtimeScope } from '../domain/realtimeTypes';
+import type {
+  ApprovePostmortemInput,
+  CreatePostmortemDraftInput,
+  GeneratePostmortemInput,
+  GeneratePostmortemResult,
+  PostmortemActionResult,
+  PostmortemReadModel,
+  ReturnPostmortemToDraftInput,
+  SavePostmortemDraftInput,
+  SubmitPostmortemForReviewInput,
+} from '@/features/postmortem/domain/postmortemTypes';
 
 export type IncidentListResult = { incidents: Incident[]; nextCursor: string | null };
 export type IncidentReadModel = {
@@ -35,6 +46,7 @@ export type IncidentReadModel = {
   authority?: IncidentAuthorityCapabilities;
   capabilities: string[];
   aiSuggestion?: AiSuggestion;
+  postmortem?: { status: string; version: number; generatedByAi: boolean; approvedAt?: string | null } | null;
 };
 export interface OperationalGateway {
   listServices(organizationId: string, includeInactive?: boolean): Promise<Service[]>;
@@ -61,5 +73,12 @@ export interface OperationalGateway {
   resolveIncident(input: ResolveIncidentInput): Promise<Incident>;
   analyzeIncident(input: AnalyzeIncidentInput): Promise<AnalyzeIncidentResult>;
   applyIncidentAnalysis(input: ApplyIncidentAnalysisInput): Promise<ApplyIncidentAnalysisResult>;
+  getPostmortem(organizationId: string, incidentId: string): Promise<PostmortemReadModel>;
+  generatePostmortem(input: GeneratePostmortemInput): Promise<GeneratePostmortemResult>;
+  savePostmortemDraft(input: SavePostmortemDraftInput): Promise<PostmortemActionResult>;
+  submitPostmortemForReview(input: SubmitPostmortemForReviewInput): Promise<PostmortemActionResult>;
+  returnPostmortemToDraft(input: ReturnPostmortemToDraftInput): Promise<PostmortemActionResult>;
+  approvePostmortem(input: ApprovePostmortemInput): Promise<PostmortemActionResult>;
+  createPostmortemDraft(input: CreatePostmortemDraftInput): Promise<PostmortemActionResult>;
   subscribeToIncidentRoom(scope: IncidentRealtimeScope, listener: (event: IncidentRealtimeEvent) => void): () => void;
 }

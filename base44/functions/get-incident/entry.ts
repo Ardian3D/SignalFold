@@ -3,6 +3,7 @@ import { authorizeActiveMembership, failure, json, loadActiveMembers, loadIncide
 import { safeIncident, safeService } from './operations.ts';
 import { canMutateIncidentAuthority, countOpenCriticalTasks, resolvableStatuses, transitions } from './incident-authority.ts';
 import { loadLatestSucceededTriage, safeAiRun } from './ai-workflow.ts';
+import { loadPostmortemForOrg } from './postmortem-workflow.ts';
 
 const taskCapabilities = (role: string) => {
   if (role === 'admin' || role === 'incident_manager') return ['CREATE_TASK', 'CLAIM_TASK', 'UPDATE_OWN_TASK', 'REASSIGN_TASK', 'ADD_INTERNAL_NOTE'];
@@ -50,6 +51,13 @@ Deno.serve(async (req) => {
       generatedAt: aiRun.completedAt ?? aiRun.startedAt,
       confidence: (aiRun.resultSummary.analysis as Record<string, unknown>).confidence,
     } : null;
+    const postmortem = await loadPostmortemForOrg(base44, access.organizationId, incident.id);
+    const postmortemMetadata = postmortem ? {
+      status: postmortem.status,
+      version: postmortem.version,
+      generatedByAi: postmortem.generatedByAi,
+      approvedAt: postmortem.approvedAt ?? null,
+    } : null;
     return json({
       incident: safeIncident(incident),
       service: service && service.organization_id === access.organizationId ? safeService(service) : null,
@@ -65,6 +73,7 @@ Deno.serve(async (req) => {
       allowedTransitions,
       authority,
       aiSuggestion,
+      postmortem: postmortemMetadata,
       capabilities: [
         ...taskCapabilities(access.membership.role),
         ...(authority.canChangeStatus ? ['CHANGE_INCIDENT_STATUS'] : []),

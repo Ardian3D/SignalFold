@@ -34,6 +34,7 @@ import { getTaskActionVisibility, type IncidentTask } from '@/features/tasks/dom
 import type { SafeOrganizationMember } from '@/features/organization/domain/organizationTypes';
 import { AiTriagePanel } from './AiTriagePanel';
 import { useIncidentRealtimeSync } from './useIncidentRealtimeSync';
+import type { PostmortemStatus } from '@/features/postmortem/domain/postmortemTypes';
 
 const mode = 'base44';
 const emptySummary = { total: 0, todo: 0, inProgress: 0, blocked: 0, done: 0, cancelled: 0, criticalOpen: 0, overdue: 0, unassigned: 0 };
@@ -280,6 +281,7 @@ export function LiveIncidentRoom() {
           {authority.canClose && <button type="button" className={neutralActionButton} disabled={authorityPending} onClick={() => { setAuthorityError(''); changeState.mutate('closed'); }}>CLOSE INCIDENT</button>}
         </div>
       )}
+      {(incident.status === 'resolved' || incident.status === 'closed') && <PostmortemRoomCta status={incidentQuery.data.postmortem?.status as PostmortemStatus | undefined} canAuthor={canRole(role, 'GENERATE_POSTMORTEM') && canRole(role, 'APPROVE_POSTMORTEM')} incidentId={incidentId!} />}
       {authorityError && <p aria-live="polite" className="mt-3 text-xs text-amber-400">{authorityError}</p>}
       {authorityPanel === 'status' && (
         <form className="mt-4 space-y-3 border border-[#242522] bg-[#141513]/30 p-4" onSubmit={event => { event.preventDefault(); if (!statusTarget || changeState.isPending) return; changeState.mutate(statusTarget as IncidentStatus); }}>
@@ -416,4 +418,18 @@ export function LiveIncidentRoom() {
       </Panel>}
     </main>
   </div>;
+}
+
+function PostmortemRoomCta({ status, canAuthor, incidentId }: { status?: PostmortemStatus; canAuthor: boolean; incidentId: string }) {
+  const hasRecord = Boolean(status);
+  if (!hasRecord && !canAuthor) return null;
+  const label = !status ? 'GENERATE POSTMORTEM' : status === 'approved' ? 'VIEW APPROVED POSTMORTEM' : 'VIEW POSTMORTEM';
+  return (
+    <div className="mt-5">
+      <Link to={`/app/incidents/${incidentId}/postmortem`} className={status === 'approved' ? primaryActionButton : limeActionButton}>
+        {label}
+      </Link>
+      {!canAuthor && !status && <p className="mt-2 text-[10px] font-mono text-[#5C5E58] uppercase">Postmortem generation requires Incident Manager or Admin authority.</p>}
+    </div>
+  );
 }

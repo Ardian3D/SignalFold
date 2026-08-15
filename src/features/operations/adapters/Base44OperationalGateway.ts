@@ -9,6 +9,18 @@ import type { SafeOrganizationMember } from '@/features/organization/domain/orga
 import type { IncidentReadModel, OperationalGateway } from '../ports/OperationalGateway';
 import type { AiSuggestion, AnalyzeIncidentInput, AnalyzeIncidentResult, ApplyIncidentAnalysisInput, ApplyIncidentAnalysisResult } from '@/features/incidents/domain/incidentAiTypes';
 import type { IncidentRealtimeEvent, IncidentRealtimeScope, RealtimeChangeType } from '../domain/realtimeTypes';
+import type {
+  ApprovePostmortemInput,
+  CreatePostmortemDraftInput,
+  GeneratePostmortemInput,
+  GeneratePostmortemResult,
+  Postmortem,
+  PostmortemActionResult,
+  PostmortemReadModel,
+  ReturnPostmortemToDraftInput,
+  SavePostmortemDraftInput,
+  SubmitPostmortemForReviewInput,
+} from '@/features/postmortem/domain/postmortemTypes';
 
 const unwrap = (value: unknown): unknown => value && typeof value === 'object' && 'data' in value ? (value as { data: unknown }).data : value;
 const invoke = async (name: string, input: Record<string, unknown>) => {
@@ -144,6 +156,53 @@ const projectTeamLoad = (record: Record<string, unknown>): SafeOrganizationMembe
   ...projectTaskSummary(record),
 });
 
+const projectPreventiveActions = (value: unknown): Postmortem['preventiveActions'] => {
+  if (!Array.isArray(value)) return [];
+  return (value as Record<string, unknown>[]).map(item => ({
+    title: String(item.title ?? ''),
+    ownerRole: String(item.ownerRole ?? item.owner_role ?? ''),
+    priority: (item.priority === 'high' || item.priority === 'medium' || item.priority === 'low' ? item.priority : 'medium') as Postmortem['preventiveActions'][number]['priority'],
+    suggestedDueInDays: typeof item.suggestedDueInDays === 'number' ? Number(item.suggestedDueInDays) : 0,
+  }));
+};
+
+const projectTimelineEntries = (value: unknown): Postmortem['timelineSummary'] => {
+  if (!Array.isArray(value)) return [];
+  return (value as Record<string, unknown>[]).map(item => ({ at: String(item.at ?? ''), event: String(item.event ?? '') }));
+};
+
+const arrayField = (record: Record<string, unknown>, camel: string, snake: string): unknown[] => {
+  const value = record[camel] ?? record[snake];
+  return Array.isArray(value) ? value : [];
+};
+
+export const projectPostmortem = (record: Record<string, unknown>): Postmortem => ({
+  id: String(record.id),
+  organizationId: String(record.organization_id ?? record.organizationId),
+  incidentId: String(record.incident_id ?? record.incidentId),
+  status: (record.status ?? 'draft') as Postmortem['status'],
+  executiveSummary: String(record.executive_summary ?? record.executiveSummary ?? ''),
+  impact: String(record.impact ?? ''),
+  detection: String(record.detection ?? ''),
+  timelineSummary: projectTimelineEntries(record.timeline_summary ?? record.timelineSummary),
+  rootCause: String(record.root_cause ?? record.rootCause ?? ''),
+  contributingFactors: arrayField(record, 'contributingFactors', 'contributing_factors').map(String),
+  resolution: String(record.resolution ?? ''),
+  wentWell: arrayField(record, 'wentWell', 'went_well').map(String),
+  wentPoorly: arrayField(record, 'wentPoorly', 'went_poorly').map(String),
+  preventiveActions: projectPreventiveActions(arrayField(record, 'preventiveActions', 'preventive_actions')),
+  unknowns: arrayField(record, 'unknowns', 'unknowns').map(String),
+  generatedByAi: bool(record, 'generatedByAi', 'generated_by_ai'),
+  aiRunId: typeof (record.ai_run_id ?? record.aiRunId) === 'string' && String(record.ai_run_id ?? record.aiRunId).trim() ? String(record.ai_run_id ?? record.aiRunId) : undefined,
+  version: Number(record.version ?? 1),
+  approvedByUserId: typeof (record.approved_by_user_id ?? record.approvedByUserId) === 'string' && String(record.approved_by_user_id ?? record.approvedByUserId).trim() ? String(record.approved_by_user_id ?? record.approvedByUserId) : undefined,
+  approvedAt: typeof (record.approved_at ?? record.approvedAt) === 'string' && String(record.approved_at ?? record.approvedAt).trim() ? String(record.approved_at ?? record.approvedAt) : undefined,
+  publishedAt: typeof (record.published_at ?? record.publishedAt) === 'string' && String(record.published_at ?? record.publishedAt).trim() ? String(record.published_at ?? record.publishedAt) : undefined,
+  createdAt: typeof (record.created_date ?? record.createdAt) === 'string' ? String(record.created_date ?? record.createdAt) : undefined,
+  updatedAt: typeof (record.updated_date ?? record.updatedAt) === 'string' ? String(record.updated_date ?? record.updatedAt) : undefined,
+  isDemo: bool(record, 'isDemo', 'is_demo'),
+});
+
 const projectTimeline = (record: Record<string, unknown>): IncidentUpdate => projectUpdate(record);
 
 const projectAssignmentOptions = (records: unknown[]) => records.map(item => projectMember(item as Record<string, unknown>));
@@ -231,6 +290,12 @@ export class Base44OperationalGateway implements OperationalGateway {
       } : undefined,
       capabilities: Array.isArray(result.capabilities) ? result.capabilities.map(String) : [],
       aiSuggestion: result.aiSuggestion && typeof result.aiSuggestion === 'object' ? projectAiSuggestion(result.aiSuggestion as Record<string, unknown>) : undefined,
+      postmortem: result.postmortem && typeof result.postmortem === 'object' ? {
+        status: String((result.postmortem as Record<string, unknown>).status ?? ''),
+        version: Number((result.postmortem as Record<string, unknown>).version ?? 1),
+        generatedByAi: (result.postmortem as Record<string, unknown>).generatedByAi === true,
+        approvedAt: typeof (result.postmortem as Record<string, unknown>).approvedAt === 'string' ? String((result.postmortem as Record<string, unknown>).approvedAt) : null,
+      } : null,
     };
   }
 
@@ -350,6 +415,57 @@ export class Base44OperationalGateway implements OperationalGateway {
       severityChanged: result.severityChanged === true,
       statusChanged: result.statusChanged === true,
     };
+  }
+
+  async getPostmortem(organizationId: string, incidentId: string): Promise<PostmortemReadModel> {
+    const result = await invoke('get-postmortem', { organizationId, incidentId }) as Record<string, unknown>;
+    return {
+      postmortem: result.postmortem ? projectPostmortem(result.postmortem as Record<string, unknown>) : null,
+      incidentStatus: typeof result.incidentStatus === 'string' ? result.incidentStatus : undefined,
+      model: typeof result.model === 'string' ? result.model : null,
+      promptVersion: typeof result.promptVersion === 'string' ? result.promptVersion : null,
+      generatedAt: typeof result.generatedAt === 'string' ? result.generatedAt : null,
+      canEdit: result.canEdit === true,
+      canApprove: result.canApprove === true,
+      approverName: typeof result.approverName === 'string' ? result.approverName : null,
+    };
+  }
+
+  async generatePostmortem(input: GeneratePostmortemInput): Promise<GeneratePostmortemResult> {
+    const result = await invoke('generate-postmortem', input as unknown as Record<string, unknown>) as Record<string, unknown>;
+    return {
+      postmortem: result.postmortem ? projectPostmortem(result.postmortem as Record<string, unknown>) : null,
+      model: typeof result.model === 'string' ? result.model : undefined,
+      promptVersion: typeof result.promptVersion === 'string' ? result.promptVersion : undefined,
+      cached: result.cached === true,
+      repaired: result.repaired === true,
+      error: typeof result.error === 'string' ? result.error : undefined,
+    };
+  }
+
+  async savePostmortemDraft(input: SavePostmortemDraftInput): Promise<PostmortemActionResult> {
+    const result = await invoke('save-postmortem-draft', input as unknown as Record<string, unknown>) as Record<string, unknown>;
+    return { postmortem: projectPostmortem(result.postmortem as Record<string, unknown>) };
+  }
+
+  async submitPostmortemForReview(input: SubmitPostmortemForReviewInput): Promise<PostmortemActionResult> {
+    const result = await invoke('submit-postmortem-for-review', input as unknown as Record<string, unknown>) as Record<string, unknown>;
+    return { postmortem: projectPostmortem(result.postmortem as Record<string, unknown>), reconciled: result.reconciled === true };
+  }
+
+  async returnPostmortemToDraft(input: ReturnPostmortemToDraftInput): Promise<PostmortemActionResult> {
+    const result = await invoke('return-postmortem-to-draft', input as unknown as Record<string, unknown>) as Record<string, unknown>;
+    return { postmortem: projectPostmortem(result.postmortem as Record<string, unknown>), reconciled: result.reconciled === true };
+  }
+
+  async approvePostmortem(input: ApprovePostmortemInput): Promise<PostmortemActionResult> {
+    const result = await invoke('approve-postmortem', input as unknown as Record<string, unknown>) as Record<string, unknown>;
+    return { postmortem: projectPostmortem(result.postmortem as Record<string, unknown>), reconciled: result.reconciled === true };
+  }
+
+  async createPostmortemDraft(input: CreatePostmortemDraftInput): Promise<PostmortemActionResult> {
+    const result = await invoke('create-postmortem-draft', input as unknown as Record<string, unknown>) as Record<string, unknown>;
+    return { postmortem: projectPostmortem(result.postmortem as Record<string, unknown>) };
   }
 
   subscribeToIncidentRoom(scope: IncidentRealtimeScope, listener: (event: IncidentRealtimeEvent) => void): () => void {
