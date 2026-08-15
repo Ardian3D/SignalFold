@@ -50,20 +50,61 @@ export function LiveDashboard() {
   const role = context!.membership.role;
   const gateway = useMemo(getOperationalGateway, []);
   const qc = useQueryClient();
+  const [resetOpen, setResetOpen] = useState(false);
+  const [resetConfirmation, setResetConfirmation] = useState('');
+  const [resetResult, setResetResult] = useState('');
+  const request = useRef(id());
   const query = useQuery({ queryKey: operationalQueryKeys.dashboard(mode, org.id), queryFn: () => gateway.getDashboardOverview(org.id) });
   const seed = useMutation({ mutationFn: () => gateway.seedDemoData(org.id, id()), onSuccess: async result => { await selectActiveOrganization(result.organizationId); await qc.invalidateQueries({ queryKey: ['operations'] }); } });
+  const reset = useMutation({
+    mutationFn: (confirmation: string) => gateway.resetDemoData(org.id, request.current, confirmation),
+    onSuccess: async () => { request.current = id(); setResetResult('DEMO WORKSPACE RESET'); setResetConfirmation(''); await qc.invalidateQueries({ queryKey: ['operations'] }); },
+    onError: async () => { request.current = id(); setResetResult('RESET FAILED. ONLY DEMO WORKSPACE DATA CAN BE RESET.'); },
+  });
 
   if (query.isPending) return <State>LOADING OPERATIONAL OVERVIEW...</State>;
   if (query.isError) return <State retry={() => void query.refetch()}>DASHBOARD DATA IS TEMPORARILY UNAVAILABLE.</State>;
   const d = query.data;
   const taskSummary = d.taskSummary ?? emptySummary;
   const openTasks = d.openTasks ?? taskSummary.todo + taskSummary.inProgress + taskSummary.blocked;
+  const isDemoWorkspace = d.demoWorkspaceState?.isDemo === true;
+  const canReset = role === 'admin';
+
+  const demoPanel = isDemoWorkspace ? (
+    <Panel>
+      <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+        <div className="space-y-1">
+          <p className="text-[10px] font-mono font-bold tracking-widest text-[#D6FF3F] uppercase" style={{ fontFamily: 'var(--font-technical)' }}>DEMO WORKSPACE</p>
+          <p className="text-sm text-[#A8AAA3]">Deterministic demo fixture. The live main Incident is created during the presentation so AI suggestions stay real.</p>
+        </div>
+        {canReset && (
+          <div className="flex flex-wrap items-center gap-2">
+            <button type="button" disabled={seed.isPending} onClick={() => seed.mutate()} className={limeActionButton}>{seed.isPending ? 'LOADING...' : 'LOAD DEMO WORKSPACE'}</button>
+            <button type="button" onClick={() => { setResetOpen(true); setResetResult(''); setResetConfirmation(''); }} className={warningActionButton}>RESET DEMO WORKSPACE</button>
+          </div>
+        )}
+      </div>
+      {resetResult && <p aria-live="polite" className="mt-3 text-xs font-mono text-[#D6FF3F]">{resetResult}</p>}
+      {resetOpen && canReset && (
+        <div className="mt-4 border border-amber-500/30 bg-amber-500/5 p-4 space-y-3">
+          <p className="text-xs font-mono text-amber-400 uppercase tracking-wider">RESET DEMO WORKSPACE — THIS CLEARS DEMO DATA ONLY</p>
+          <p className="text-xs text-[#A8AAA3]">Type <span className="font-mono text-[#F3F1EA]">RESET DEMO DATA</span> to confirm. Non-demo incidents, your organization, and your account remain untouched.</p>
+          <input aria-label="Reset demo confirmation" value={resetConfirmation} onChange={event => { setResetConfirmation(event.target.value); setResetResult(''); }} className={`w-full sm:w-96 ${textInputControl}`} placeholder="RESET DEMO DATA" />
+          <div className="flex flex-wrap gap-2">
+            <button type="button" disabled={reset.isPending || resetConfirmation !== 'RESET DEMO DATA'} className={warningActionButton} onClick={() => reset.mutate(resetConfirmation)}>{reset.isPending ? 'RESETTING...' : 'CONFIRM RESET'}</button>
+            <button type="button" className={neutralActionButton} onClick={() => { setResetOpen(false); setResetConfirmation(''); }}>CANCEL</button>
+          </div>
+        </div>
+      )}
+    </Panel>
+  ) : null;
 
   if (d.recentIncidents.length === 0) {
-    return <div className="w-full min-w-0 flex justify-center"><Panel><div data-testid="dashboard-empty-text-stack" className="space-y-4" style={{ display: 'block', width: '100%', minWidth: 0, textAlign: 'center', writingMode: 'horizontal-tb' }}><h2 className="text-2xl font-bold text-[#F3F1EA]">NO INCIDENT RECORDS YET</h2><p data-testid="dashboard-empty-description" className="text-[#A8AAA3]" style={{ display: 'block', width: '100%', maxWidth: '36rem', minWidth: 0, marginInline: 'auto', whiteSpace: 'normal', wordBreak: 'normal', overflowWrap: 'normal', writingMode: 'horizontal-tb' }}>Create the first incident for this workspace or load the canonical demo workspace.</p><div className="flex flex-wrap justify-center gap-3"><Link to="/app/incidents/new" className={primaryActionButton}>CREATE FIRST INCIDENT</Link>{role === 'admin' && <button type="button" disabled={seed.isPending} onClick={() => seed.mutate()} className={limeActionButton}>{seed.isPending ? 'LOADING...' : 'LOAD DEMO WORKSPACE'}</button>}</div></div></Panel></div>;
+    return <div className="w-full min-w-0 space-y-6">{demoPanel}<div className="w-full min-w-0 flex justify-center"><Panel><div data-testid="dashboard-empty-text-stack" className="space-y-4" style={{ display: 'block', width: '100%', minWidth: 0, textAlign: 'center', writingMode: 'horizontal-tb' }}><h2 className="text-2xl font-bold text-[#F3F1EA]">NO INCIDENT RECORDS YET</h2><p data-testid="dashboard-empty-description" className="text-[#A8AAA3]" style={{ display: 'block', width: '100%', maxWidth: '36rem', minWidth: 0, marginInline: 'auto', whiteSpace: 'normal', wordBreak: 'normal', overflowWrap: 'normal', writingMode: 'horizontal-tb' }}>Create the first incident for this workspace or load the canonical demo workspace.</p><div className="flex flex-wrap justify-center gap-3"><Link to="/app/incidents/new" className={primaryActionButton}>CREATE FIRST INCIDENT</Link>{role === 'admin' && <button type="button" disabled={seed.isPending} onClick={() => seed.mutate()} className={limeActionButton}>{seed.isPending ? 'LOADING...' : 'LOAD DEMO WORKSPACE'}</button>}</div></div></Panel></div></div>;
   }
 
   return <div className="space-y-6">
+    {demoPanel}
     <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
       {[
         ['ACTIVE', d.activeIncidentsCount],

@@ -366,8 +366,8 @@ export class Base44OperationalGateway implements OperationalGateway {
     return (await invoke('seed-demo-data', { sourceOrganizationId: organizationId, confirmation: 'CREATE DEMO WORKSPACE', requestId })) as { organizationId: string; created: number };
   }
 
-  async resetDemoData(organizationId: string, requestId: string) {
-    return (await invoke('reset-demo-data', { organizationId, confirmation: 'RESET DEMO DATA', requestId })) as { deleted: number };
+  async resetDemoData(organizationId: string, requestId: string, confirmation: string) {
+    return (await invoke('reset-demo-data', { organizationId, confirmation, requestId })) as { deleted: number };
   }
 
   async changeIncidentState(input: import('@/features/incidents/domain/incidentAuthorityTypes').ChangeIncidentStateInput) {

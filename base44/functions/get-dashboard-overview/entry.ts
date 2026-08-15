@@ -8,6 +8,8 @@ Deno.serve(async (req) => {
     const base44 = createClientFromRequest(req);
     const input = await req.json();
     const access = await authorizeActiveMembership(base44, input.organizationId);
+    const organization = await base44.asServiceRole.entities.Organization.get(access.organizationId);
+    if (!organization) throw { code: 'ORGANIZATION_NOT_FOUND', status: 404 };
     const { incidents, services, activity, teamLoad, taskSummary } = await loadDashboardReadModel(base44, access.organizationId);
 
     const active = incidents.filter((incident: any) => !['resolved', 'closed'].includes(incident.status));
@@ -43,7 +45,7 @@ Deno.serve(async (req) => {
       serviceSummary,
       teamLoad,
       quickCreateCapability: true,
-      demoWorkspaceState: { isDemo: false, canSeed: access.membership.role === 'admin' },
+      demoWorkspaceState: { isDemo: organization.is_demo === true, canSeed: access.membership.role === 'admin' },
     });
   } catch (error) {
     return failure(error);

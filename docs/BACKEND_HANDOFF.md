@@ -1445,3 +1445,100 @@ The product owner approved a controlled architecture deviation (PRD 1.1):
 - Gate results recorded in `screenshot/phase-09/runtime-evidence.md`; network
   evidence in `screenshot/phase-09/network-audit.md`; latency in
   `screenshot/phase-09/realtime-latency.md`.
+
+
+## 18 / Phase 10 - Demo, QA & Production Readiness
+
+### Demo functions
+
+- `seed-demo-data` and `reset-demo-data` were refactored to delegate to a shared,
+  directly-testable module `base44/functions/_shared/demo-data.ts`
+  (`seedDemoWorkspace` / `resetDemoWorkspace`), with each function folder keeping
+  a self-contained copy plus `coordination.ts`. Entry files are thin
+  `Deno.serve` wrappers over the shared logic.
+
+### Seed (`seed-demo-data`)
+
+- Admin only (`Membership.role === 'admin'`); never `User.role`.
+- Requires typed confirmation `CREATE DEMO WORKSPACE` and a valid request id.
+- Seeds a canonical demo organization (Northstar Commerce, `is_demo=true`)
+  owned by the acting Admin when none exists, plus the four canonical services
+  and secondary/history records (one active SEV2, one resolved sample, two
+  low-priority historical).
+- The resolved sample gets a deterministic approved Postmortem fixture:
+  `generated_by_ai=false`, `ai_run_id=null`, `approved_by_user_id=user.id`
+  (the real Admin actor performing seed), server `approved_at`. No fake
+  approver identity is stored.
+- The live main checkout-payments Incident is intentionally NOT pre-seeded so
+  the presenter creates it during the demo and real DeepSeek suggestions run.
+- Seed is idempotent: deterministic lookups (service name, incident title,
+  task title, Postmortem incident parent) prevent duplicates on repeated runs.
+- Seed performs NO DeepSeek calls and creates NO AiRun.
+
+### Reset (`reset-demo-data`)
+
+- Admin only; requires exact typed confirmation `RESET DEMO DATA`.
+- Refuses any non-demo organization (`DEMO_RESET_FORBIDDEN`).
+- Ownership is derived from a proven demo parent: demo Incidents
+  (`is_demo=true`) in the current organization. Their Postmortem, IncidentTask,
+  IncidentUpdate, and incident-scoped demo AiRun children are removed in safe
+  dependency order before the Incident itself.
+- Demo Services are deliberately PRESERVED (retained/reused) because a service
+  fixture is harmless and seed is idempotent; deletion is not required for a
+  safe reset.
+- Organization, Membership, User, and non-demo records are never touched. No
+  organization-wide unfiltered delete and no `deleteAll`.
+
+### Demo data ownership
+
+- `Service`, `Incident`, `IncidentTask`, `IncidentUpdate`, `AiRun`,
+  `Organization`, and `Postmortem` all carry `is_demo`; `Membership` does not.
+- Reset scopes strictly to the current organization's demo-owned Incident
+  parent and its children.
+
+### Dashboard demo state
+
+- `get-dashboard-overview` now derives `demoWorkspaceState.isDemo` from the
+  actual organization's `is_demo` flag (previously hardcoded false) and keeps
+  `canSeed` Admin-gated.
+
+### Frontend demo affordances
+
+- `LiveDashboard` shows a DEMO WORKSPACE helper card in demo workspaces with
+  LOAD DEMO and RESET DEMO WORKSPACE (Admin-only). Reset requires typing the
+  exact phrase `RESET DEMO DATA`; the confirm button stays disabled until the
+  phrase matches. Non-demo workspaces hide the helper; non-admin roles receive
+  no functional reset control.
+- `resetDemoData` gateway signature now accepts the user-typed confirmation.
+
+### Tests
+
+- New `src/test/phase10DemoReadiness.test.tsx` (contract/source + demo UI) and
+  `src/test/phase10DemoBehavior.test.ts` (functional idempotency/safety on the
+  shared module): seed/reset authorization matrix, seed idempotency, reset
+  safety (non-demo + cross-tenant protection), child cascade, exact
+  confirmation, seed -> reset -> seed cycle, no fake AiRun, no live main
+  incident pre-seed, demo UI gating, and P0 critical-path resource assertions.
+
+### Deployment
+
+- Targeted: `seed-demo-data`, `reset-demo-data` (source changed), plus any
+  QA-fixed function, and the site. No entity schema change; no auth push; no
+  full `base44 deploy`.
+
+### Hosted verification
+
+- Gates recorded in `screenshot/phase-10/runtime-evidence.md`, network audit in
+  `screenshot/phase-10/network-audit.md`, demo timing in
+  `screenshot/phase-10/demo-timing.md`, security in
+  `screenshot/phase-10/security-audit.md`, QA matrix in
+  `screenshot/phase-10/qa-matrix.md`.
+
+### Known limitations / production-readiness verdict
+
+- Phase 08 realtime subscriptions + 10-second bounded reconciliation remain
+  exactly as approved in PRD 1.1. Base44 hosted realtime delivery for
+  service-role backend-function writes remains a documented platform limitation;
+  the degraded fallback covers it and is never labeled LIVE.
+- See `docs/PRODUCTION_READINESS.md` for the full snapshot and `README.md` for
+  local/operator guidance.

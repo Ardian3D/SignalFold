@@ -66,7 +66,7 @@ export interface OperationalGateway {
   listIncidentTimeline(organizationId: string, incidentId: string, direction?: 'desc' | 'asc'): Promise<IncidentTimeline>;
   listTeamTaskLoad(organizationId: string): Promise<Array<SafeOrganizationMember & TaskSummary>>;
   seedDemoData(organizationId: string, requestId: string): Promise<{ organizationId: string; created: number }>;
-  resetDemoData(organizationId: string, requestId: string): Promise<{ deleted: number }>;
+  resetDemoData(organizationId: string, requestId: string, confirmation: string): Promise<{ deleted: number }>;
   changeIncidentState(input: ChangeIncidentStateInput): Promise<Incident>;
   changeIncidentSeverity(input: ChangeIncidentSeverityInput): Promise<Incident>;
   assignIncidentCommander(input: AssignIncidentCommanderInput): Promise<Incident>;

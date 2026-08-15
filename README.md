@@ -2,196 +2,208 @@
 
 > Turn signals into action.
 
-SignalFold is an AI-assisted incident command center that transforms scattered incident reports into structured triage, coordinated response tasks, realtime-ready activity history, controlled resolution workflows, and actionable Postmortems.
+SignalFold is an AI-assisted incident command center that transforms scattered incident reports into structured triage, coordinated response tasks, realtime-ready activity history, controlled resolution workflows, and human-reviewed Postmortems.
 
 **Core Philosophy:** AI assists. Humans decide. The server is authoritative.
 
 ---
 
 ## 01 / Product Overview
-SignalFold stands as an emergency response dashboard for high-velocity software engineering teams. In an outage or degradation event, SignalFold absorbs system and customer indicators, suggests severity levels, automates task assignments, and orchestrates live operator checklists. The application design features a "calm during chaos" theme, built in high-contrast industrial style, optimized for immediate readability under heavy cognitive load.
+
+SignalFold is an emergency response dashboard for high-velocity software engineering teams. In an outage or degradation event, SignalFold absorbs system and customer indicators, suggests severity levels, coordinates response tasks, tracks an append-only timeline, and guides a controlled resolution plus a human-approved Postmortem. The application uses a "calm during chaos" high-contrast industrial theme optimized for immediate readability under heavy cognitive load.
+
+### Core P0 Capability
+
+- Authenticated operator sessions via Base44.
+- Tenant-scoped organizations, memberships, and role authority (Reporter / Responder / Incident Manager / Admin).
+- Service catalog, incident creation, and a live dashboard.
+- Incident Room with tasks, timeline, authority transitions, and resolution.
+- DeepSeek server-side triage (suggestion only — human reviews and applies).
+- Base44 realtime subscriptions with an owner-approved 10-second bounded reconciliation fallback.
+- Human-reviewed Postmortem generation, editing, review, and approval.
 
 ---
 
-## 02 / Frontend Status
-- **Current Phase:** Frontend Phase (Phase 1) is **Complete and Frozen**.
-- **Backend Integrations:** Base44, DeepSeek, and Realtime SSE/WebSocket services are **not yet connected**.
-- **Preview Operations:** Operational actions performed inside the UI during preview mode are strictly client-side and non-authoritative.
-- **Security Check:** Production backend and API key isolation are not yet verified.
+## 02 / Technology Stack
 
----
-
-## 03 / Technology Stack
 - **Framework & Runtime:** React 19 + Vite 6
 - **Language:** TypeScript 5.8 (Strict Mode Enabled)
 - **Styling Engine:** Tailwind CSS v4
-- **Local Typography Assets:** `@fontsource-variable/sora`, `@fontsource-variable/inter`, `@fontsource/ibm-plex-mono` (Zero external Google Font API calls)
 - **Routing:** React Router v7
 - **Server State Management:** TanStack Query v5
-- **Form Handling:** React Hook Form + Zod
-- **Accessible Layers:** Radix UI Dialog (`@radix-ui/react-dialog`)
-- **Icons:** Lucide React
+- **Backend:** Base44 Developer Backend (`@base44/sdk`) with entity RLS and server-side functions
+- **AI:** DeepSeek (server-side only)
 - **Test Framework:** Vitest + React Testing Library + JSDOM
 
 ---
 
-## 04 / Local Development
-Ensure Node.js is installed locally, then run the following commands:
+## 03 / Local Development
+
+### Prerequisites
+
+- Node.js (npm)
+- A Base44 project link for backend mode (`base44/.app.jsonc`); mock mode works without it
 
 ### Install Dependencies
+
 ```bash
 npm install
 ```
 
 ### Start Local Development Server
+
 ```bash
 npm run dev
 ```
-*The application dev server starts on port `3000` at `http://localhost:3000`.*
 
----
+The application dev server starts on port `3000` at `http://localhost:3000`.
 
-## 05 / Environment Configuration
-SignalFold uses local environments for frontend configuration. See `.env.example` for details.
+### Build
 
-### Crucial Security Declarations:
-- Only variables starting with `VITE_` are exposed to the client-side bundle.
-- Sensitive environment secrets (such as Base44 credentials or DeepSeek API keys) **must never** use `VITE_` prefixes. They belong strictly in backend and server-side configurations.
-- `VITE_DATA_MODE="mock"` is the default frontend configuration for standalone preview and QA validation.
-
-Base44 public runtime configuration is optional during this foundation phase:
-- `VITE_BASE44_APP_ID` identifies the public Base44 application and may remain empty.
-- `VITE_BASE44_USE_LOCAL_DEV` enables the local Base44 server only in explicit development mode.
-- `VITE_BASE44_LOCAL_SERVER_URL` defaults to `http://localhost:4400` for that local-only case.
-
-Mock mode remains the safe default. No `VITE_` variable may contain an authentication token, service-role credential, DeepSeek key, or other secret.
-
----
-
-## 06 / Available Routes
-The application is structured into public-facing information routes and authenticated operator command paths:
-
-### Public Routes:
-- `/` — Landing Page (Official brand lockup and high-visibility entryways)
-- `/login` — Operator Login Gate
-- `/signup` — Organization Registration Gateway
-- `/privacy` — Privacy Policy
-- `/terms` — Terms of Service
-
-### Authenticated & Preview Routes:
-- `/app` — Operations Dashboard (Live summaries, quick-create, response workload charts)
-- `/app/onboarding` — Interactive Multi-Step Responder Onboarding Workstation
-- `/app/incidents` — Directory of active and historical incidents (Searching, sorting, status filters)
-- `/app/incidents/new` — Guided triage submission desk
-- `/app/incidents/SF-2026-0042` — Canonical Active Command Room (Payments Fail Story)
-- `/app/incidents/resolved-seed` — Canonical Resolved Command Room
-- `/app/incidents/resolved-seed/postmortem` — Approved Postmortem and Reconstruction workspace
-- `/app/services` — Monitored Services Directory (Read-only foundation awaiting backend API)
-- `/app/team` — On-Call Responders Directory (Read-only foundation awaiting backend API)
-- `/app/settings` — Workspace Preferences & Org Settings (Read-only foundation awaiting backend API)
-
----
-
-## 07 / Canonical Demo Story
-SignalFold is designed to demo a chronological operational journey:
-
-```
-REPORT (Indicator Signal)
-  ↓
-TRIAGE (Severity Recommendation & AI Analysis)
-  ↓
-COORDINATE (Active Tasks, Responder Assigns & Timeline Events)
-  ↓
-RESOLVE (Verification checklist, Resolved Incident Seed)
-  ↓
-LEARN (Postmortem Generation, Version Control & Reconstruction)
-```
-
-### Walkthrough Sequence:
-1. **Landing:** Start on `/` and click "Enter Workspace".
-2. **Dashboard:** Analyze active incidents on `/app`.
-3. **Command Room (`SF-2026-0042`):** Step into the core outage room. Examine the incident header, trigger deep analysis under AI Triage, assign tasks to operators, and witness the append-only timeline log.
-4. **Postmortem Foundation:** Visit `/app/incidents/resolved-seed` and step into `/postmortem` to run through the three-step postmortem approval, version check, and draft generation.
-
-*Note: `SF-2026-0042` is reporting as active and cannot be permanently mutated by the local preview. The resolved state is accessed via `/app/incidents/resolved-seed`.*
-
----
-
-## 08 / QA Preview Parameters
-The development server features dedicated query-string QA overrides to test diverse visual, network, and system states without modifying database records:
-
-### Connectivity States
-- `?previewConnection=offline` — Forces system connectivity alert to "OFFLINE".
-- `?previewConnection=reconnecting` — Displays technical reconnecting banner.
-- `?previewConnection=restored` — Triggers restored success feedback.
-
-### AI (DeepSeek) Simulation State
-- `?previewAiOperation=<triage|postmortem>&previewAiState=pending` — Pulsing diagnostic analytical log.
-- `?previewAiState=unavailable` — Custom error modal displaying detailed code `DS-503-PRO` with fallback local controls.
-- `?previewAiState=timeout` — Triggers time limit exceeded status (`TIMEOUT_EXCEEDED`).
-- `?previewAiState=rate-limited` — Emulates rate throttling with interactive retries.
-- `?previewAiState=invalid` — Simulates structured payload validation errors.
-
-### Route UI States
-- `?previewUiState=loading&previewUiScope=<settings|incidents|etc>` — Renders custom bone-skeletons.
-- `?previewUiState=forbidden` — Displays full-screen Access Denied dashboard banner.
-- `?previewUiState=network-error` — Renders database retrieval error status with interactive retry buttons.
-- `?previewUiState=empty` — Displays baseline empty empty-states.
-
----
-
-## 09 / Testing
-SignalFold features automated unit and integration tests across every visual layout and interaction.
-
-### Run Full Test Suite
-```bash
-npm run test:run
-```
-*Current Coverage: 27 test files, 232 test cases (100% passing).*
-
----
-
-## 10 / Production Build
-Vite bundles and minifies static files into the local `/dist` folder.
-
-### Run Production Compilation
 ```bash
 npm run build
 ```
 
----
+### Test
 
-## 11 / Architecture Boundaries
-- **Frontend Responsibilities:** Handles view layout, typography scaling, local form validator checks, client-side routing, negative-space balancing, interactive animation layers, and simulated mock workflows.
-- **Future Base44 (Backend) Responsibilities:** Tenant and organization database isolation, user credential verification, authoritative membership permissions, concurrent task tracking (via optimistic locking), append-only chronological audits, and real-time state synchronization.
-- **Future DeepSeek Responsibilities:** Provides telemetry parsing, structured incident summaries, postmortem timeline draft generation, and draft review feedback. DeepSeek remains a suggestion engine; write actions must be approved by an authorized human operator.
+```bash
+npm test            # full suite, serial Vitest configuration
+npm run test:run    # vitest run
+```
 
----
+### Typecheck and lint
 
-## 12 / Backend Integration Plan
-Backend integration is structured to roll out progressively in Phase 2 via the Grok CLI:
-1. Initialize Base44 project structure and client-side SDK.
-2. Secure authentication session persistence.
-3. Establish tenant organizations and member permissions.
-4. Replace local mock stores with GET fetch API hooks.
-5. Create writing functions for incidents, tasks, and audit logs.
-6. Connect real-time Server-Sent Events (SSE) or WebSockets.
-7. Wrap DeepSeek proxies around secure backend paths.
+```bash
+npm run typecheck
+npm run lint
+```
 
 ---
 
-## 13 / Known Development Artefacts
-During local container execution, the browser developer console may log:
-`[vite] failed to connect to websocket`
-This is a standard environment artifact resulting from the disabled HMR proxy layer. It has no bearing on compilation, application build integrity, or production runtimes.
+## 04 / Environment Configuration
+
+See `.env.example`. Only variables starting with `VITE_` are exposed to the client bundle. Secrets must **never** use a `VITE_` prefix.
+
+Frontend-public variables:
+
+- `VITE_DATA_MODE` — `"mock"` (default, standalone preview) or `"base44"` (live backend)
+- `VITE_BASE44_APP_ID` — public Base44 application ID (not a secret)
+- `VITE_BASE44_USE_LOCAL_DEV` — local-only development flag
+- `VITE_BASE44_LOCAL_SERVER_URL` — defaults to `http://localhost:4400`
+
+Server-only secrets (configured in the Base44 secret store, never in the repo or the browser):
+
+- `DEEPSEEK_API_KEY` — required for live AI triage / Postmortem generation
+- `DEEPSEEK_MODEL` — expected `deepseek-v4-flash`
+- `DEEPSEEK_BASE_URL`, `DEEPSEEK_TIMEOUT_MS`, `AI_POSTMORTEM_TIMEOUT_MS` — optional tuning
+
+There is intentionally **no** `VITE_DEEPSEEK_API_KEY`.
 
 ---
 
-## 14 / Security Notes
-- Private keys, OAuth application credentials, and DeepSeek authorization tokens must belong strictly in backend system configurations.
-- Client browsers must never be served with administrative secrets or direct raw database connections.
+## 05 / Mock Mode
+
+When `VITE_DATA_MODE="mock"` (or the app is not configured), SignalFold runs a deterministic frontend mock:
+
+- No backend writes; operations are read-only previews.
+- Demo helper text appears where appropriate.
+- Realtime is a no-op and the 10-second reconciliation does not run.
+
+Mock mode is for design QA and isolated preview. Production behavior uses `VITE_DATA_MODE="base44"` with a linked Base44 app.
 
 ---
 
-## 15 / Frontend Freeze Policy
-The SignalFold frontend is **frozen**. Any structural changes to layout, stylesheets, paths, or default data files must comply with the change-control procedures documented in `/docs/FRONTEND_FREEZE.md`.
+## 06 / Authenticated Routes
+
+- `/app` — Operations Dashboard
+- `/app/onboarding` — First-time organization setup
+- `/app/incidents` — Incident list (search, filters, sort)
+- `/app/incidents/new` — Create incident
+- `/app/incidents/:incidentId` — Incident Room (Timeline / Tasks / Details)
+- `/app/incidents/:incidentId/postmortem` — Postmortem editor
+- `/app/services` — Service catalog
+- `/app/team` — Team / members
+- `/app/settings` — Organization settings (incl. demo workspace)
+
+---
+
+## 07 / Demo Workspace
+
+SignalFold ships a deterministic demo workspace for presentation:
+
+- Canonical demo organization **Northstar Commerce** (`is_demo=true`), owned by the Admin who loads it.
+- Four canonical services: Checkout Web, Payments API, Order Processor, Customer Portal.
+- Secondary seed records: one active SEV2 incident, one resolved sample with an approved Postmortem fixture, and low-priority historical incidents.
+- The **live main incident** ("Checkout payments failing after latest deployment") is intentionally **not** pre-seeded — the presenter creates it during the demo so AI suggestions are real.
+
+### Load Demo Workspace
+
+Admin-only, from an empty dashboard or the demo helper card. Calls the `seed-demo-data` backend function.
+
+### Reset Demo Workspace
+
+Admin-only, from the demo helper card. Requires typing the exact confirmation **`RESET DEMO DATA`**. Reset only removes the current organization's demo-owned records (Incidents and their Postmortem / Tasks / Timeline / incident-scoped AiRun children). Services, the organization, memberships, and non-demo records are preserved.
+
+---
+
+## 08 / DeepSeek Setup (high level)
+
+1. Configure `DEEPSEEK_API_KEY` and `DEEPSEEK_MODEL` as Base44 server secrets.
+2. Live triage and Postmortem generation run entirely server-side in backend functions. The browser never calls `api.deepseek.com` directly and never holds the key.
+3. AI output is strictly validated, bounded, and treated as a draft/suggestion until a human applies or approves it.
+
+---
+
+## 09 / Realtime
+
+- Base44 entity subscriptions (`Incident`, `IncidentTask`, `IncidentUpdate`) are the **primary** synchronization transport for the active Incident Room.
+- In the current hosted environment, Base44 service-role backend-function writes do not currently produce observed `update_model` frames to other clients. This is a proven platform delivery limitation, not a SignalFold adapter defect.
+- The product owner approved a **degraded fallback** (PRD 1.1): while an authenticated active Incident Room is online and document-visible, the hook performs a bounded authoritative read reconciliation every **10 seconds** (`REALTIME_RECONCILIATION_INTERVAL_MS`).
+- Fallback-discovered data is **never** labeled LIVE; LIVE is reserved for a genuine subscription callback. No 1-second or high-frequency polling is used, and no polling exists outside the active Incident Room.
+
+---
+
+## 10 / Security & Authority
+
+- The server is authoritative: actor, timestamps, organization scope, approver identity, and approval time are all server-derived.
+- `Membership.role` is authoritative. `User.role` is never used for authorization.
+- Reporter and Responder cannot mutate severity/status/commander/resolution, run AI triage, generate/approve Postmortems, or reset demo data.
+- All privileged writes go through backend functions; entity RLS denies direct client writes.
+- DeepSeek never changes authority: it produces suggestions/drafts only.
+- No secrets are exposed to the browser; no service-role client is used in the bundle.
+
+---
+
+## 11 / Testing
+
+```bash
+npm test
+```
+
+SignalFold uses the serial Vitest configuration (`--maxWorkers=1`). The full suite covers authorization, tenant isolation, authority transitions, task concurrency, AI safety, realtime/fallback behavior, Postmortem approval, and demo seed/reset safety.
+
+---
+
+## 12 / Production Deployment
+
+1. Ensure `VITE_DATA_MODE="base44"` and `VITE_BASE44_APP_ID` point at the hosted app.
+2. Deploy backend functions that changed (targeted `npx base44 functions deploy <name> ...`).
+3. Build and deploy the site: `npm run build && npx base44 site deploy -y`.
+4. Never run a full `npx base44 deploy` without owner intent; never `auth push` unless an auth configuration change is required.
+
+---
+
+## 13 / Known Limitations
+
+- Base44 hosted realtime delivery for service-role backend-function writes is not currently observed (documented platform behavior); the 10-second bounded reconciliation covers it.
+- `npm audit` reports pre-existing advisories in transitive dependencies (`nanoid`, `react-router`) that require a breaking dependency/framework migration to resolve.
+- The production bundle emits a large-chunk warning; no breaking code-split refactor was applied.
+
+---
+
+## 14 / Repository
+
+- Product document: `PRD_SignalFold.md` (version 1.1).
+- Backend handoff: `docs/BACKEND_HANDOFF.md`.
+- Demo runbook: `docs/DEMO_RUNBOOK.md`.
+- Production readiness: `docs/PRODUCTION_READINESS.md`.
